@@ -4,6 +4,14 @@ dist/
 build/
 *.log
 
+# 运行时数据库（SQLite 由 server.py 自动创建）
+data/
+*.db
+*.db-shm
+*.db-wal
+__pycache__/
+*.pyc
+
 # 编辑器 / 系统
 .vscode/
 .idea/
