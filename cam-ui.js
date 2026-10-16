@@ -283,10 +283,28 @@ const CamUI = (() => {
     const posture = { targets: ['forward_head', 'shoulder'], penalty: 5 };
     // 性别来自全局状态，决定穿搭 / 理容 / 妆容文案
     const gender = (typeof J !== 'undefined' && J.state && J.state.gender) || 'male';
+    // 先用本地规则引擎即时出结果，保证交互零等待
     const plan = Advisor.build(analysis, posture, gender);
     st.lastPlan = plan;
 
     J.toast('采集完成，正在生成分析报告…');
+
+    // 后端在线：把方案重算交给服务端（结果一致，但由 Python 规则引擎产出），
+    // 同时把本次检测入库到 SQLite，供历史 / 趋势 / 跨会话留存使用。
+    if (typeof API !== 'undefined') {
+      API.ready().then(ok => {
+        if (!ok) return;
+        API.saveReport(analysis, posture, gender).then(res => {
+          if (res && res.plan) {
+            st.lastPlan = res.plan;
+            st.lastReportId = res.id;
+            try { renderReports(); } catch (e) {}
+            if (typeof J !== 'undefined' && J.loadServerTrend) { try { J.loadServerTrend(); } catch (e) {} }
+          }
+        });
+      });
+    }
+
     // 交给分析页
     setTimeout(() => J.startAnalyze(), 260);
   }
@@ -550,6 +568,30 @@ const CamUI = (() => {
     get running() { return st.started; },
     _dbg() { return { started: st.started, starting: st.starting, gesture: st.gesture,
                       pending: st.pending, loopOn: st.loopOn, cams: st.cams.length,
-                      hasVideo: !!st.video, hasUM: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) }; }
+                      hasVideo: !!st.video, hasUM: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) }; },
+
+    // ---- 测试接缝：注入一份 analysis，复用真实「方案 + 入库 + 渲染」路径 ----
+    // 无头环境没有摄像头，capture() 无法产出 analysis；此钩子让自动化验收
+    // 能完整走一遍服务端 plan 生成与 SQLite 入库，不改变任何线上行为。
+    __injectAnalysis(analysis, posture, gender) {
+      st.lastAnalysis = analysis;
+      st.lastPlan = Advisor.build(analysis, posture, gender);
+      J.toast('采集完成，正在生成分析报告…');
+      if (typeof API !== 'undefined') {
+        API.ready().then(ok => {
+          if (!ok) return;
+          API.saveReport(analysis, posture, gender).then(res => {
+            if (res && res.plan) {
+              st.lastPlan = res.plan;
+              st.lastReportId = res.id;
+              try { renderReports(); } catch (e) {}
+              if (typeof J !== 'undefined' && J.loadServerTrend) { try { J.loadServerTrend(); } catch (e) {} }
+            }
+          });
+        });
+      }
+      setTimeout(() => J.startAnalyze(), 80);
+      return true;
+    }
   };
 })();

@@ -1718,3 +1718,49 @@ body, .stage-bg, .phone, .card, .screen, .btn-primary, .avatar, .mirror-ic,
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ===================================================================
+   v6.0 · 数据源指示胶囊（后端接入可见化）
+   =================================================================== */
+.ds-slot { margin-top: 22px; min-height: 26px; }
+
+.ds-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 13px 6px 11px;
+  font-size: 12px; font-weight: 600; letter-spacing: .02em;
+  border-radius: 999px; white-space: nowrap;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text-dim);
+  backdrop-filter: blur(12px) saturate(1.3);
+  box-shadow: var(--sh-inset);
+  animation: jj-badge-in .55s var(--e-spring) both;
+}
+.ds-badge i {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: currentColor; box-shadow: 0 0 9px currentColor;
+  flex: none;
+}
+/* 在线：青金呼吸灯 */
+.ds-badge.on { color: var(--c-accent); border-color: rgba(var(--c-accent-rgb), .45); }
+.ds-badge.on i { animation: jj-ds-pulse 2s var(--e-in-out) infinite; }
+/* 离线：琥珀（非故障，只是回落本地） */
+.ds-badge.off { color: var(--warn); border-color: rgba(251, 191, 36, .4); }
+
+@keyframes jj-ds-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .48; transform: scale(.78); }
+}
+@keyframes jj-badge-in {
+  from { opacity: 0; transform: translateY(8px) scale(.92); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* 报告列表里的「服务端」小标 */
+.rp-src {
+  font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 999px;
+  border: 1px solid rgba(var(--c-accent-rgb), .38); color: var(--c-accent);
+  background: rgba(var(--c-accent-rgb), .08); white-space: nowrap; vertical-align: middle;
+  margin-left: 6px;
+}
+

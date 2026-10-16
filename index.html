@@ -77,6 +77,9 @@
       <span class="hint-arrow">← 点击右侧手机屏，走完整流程</span>
     </div>
 
+    <!-- 数据源指示：后端在线走 Python + SQLite，离线自动回落本地 -->
+    <div class="ds-slot" id="dsSlot" aria-live="polite"></div>
+
     <!-- 性别切换：切换后整套配色与建议文案同步改变 -->
     <div class="gender-switch">
       <span class="gs-label">使用模式</span>
@@ -170,11 +173,11 @@
               <button class="quick" onclick="J.toast('历史记录已同步至云端 ☁')">
                 <div class="qi">📈</div>
                 <div class="qt">历史趋势</div>
-                <div class="qd">共 12 次检测</div>
+                <div class="qd"><span id="trendCount">共 12 次检测</span></div>
               </button>
             </div>
 
-            <div class="sec-label">近 6 次体态评分</div>
+            <div class="sec-label">近 6 次体态评分<span class="trend-cap" id="trendCap"></span></div>
             <div class="card fade-up d2">
               <div class="trend" id="trendChart"></div>
             </div>
@@ -796,6 +799,7 @@
 
 <div class="foot-note">镜界 JINGJIE · AI 智美形象管家 · 高保真交互原型 v1.0</div>
 
+<script src="api.js"></script>
 <script src="camera.js"></script>
 <script src="advisor.js"></script>
 <script src="voice.js"></script>

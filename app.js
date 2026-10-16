@@ -47,6 +47,9 @@ const J = (() => {
       try { CamUI.renderReports(); } catch (e) {}
     }
 
+    // 7) 趋势图跟随性别重新拉取（后端按 gender 过滤）
+    try { loadServerTrend(); } catch (e) {}
+
     if (!opts.silent) {
       toast(g === 'female'
         ? '已切换到女生模式 · 粉色主题已启用 🌸'
@@ -364,16 +367,23 @@ const J = (() => {
       </svg>`;
   }
 
-  /* ---------- 趋势图（v5.0：自绘 SVG 折线 + 面积渐变 + 坐标 + 悬浮点） ---------- */
-  function buildTrend() {
-    const data   = [72, 75, 79, 82, 84, 86];
-    const labels = ['7/2', '7/9', '7/16', '7/23', '7/30', '8/6'];
+  /* ---------- 趋势图（v6.0：优先取后端真实历史，离线回落内置演示序列） ---------- */
+  function buildTrend(serverPoints) {
+    // serverPoints: [{score, created_at}, ...] 由后端 /api/trend 提供
+    const hasSrv = Array.isArray(serverPoints) && serverPoints.length >= 2;
+    const data   = hasSrv ? serverPoints.map(p => p.score) : [72, 75, 79, 82, 84, 86];
+    const labels = hasSrv
+      ? serverPoints.map(p => (p.created_at || '').slice(5, 10).replace('-', '/'))
+      : ['7/2', '7/9', '7/16', '7/23', '7/30', '8/6'];
     const box = document.getElementById('trendChart');
     if (!box) return;
 
     const W = 272, H = 116, PL = 22, PR = 10, PT = 14, PB = 20;
     const iw = W - PL - PR, ih = H - PT - PB;
-    const min = 60, max = 92;
+    const lo = Math.min.apply(null, data), hi = Math.max.apply(null, data);
+    // 上下各留 5 分余量，避免曲线贴边；跨度至少 12 分保证形状可读
+    const pad = Math.max(5, (12 - (hi - lo)) / 2);
+    const min = Math.floor(lo - pad), max = Math.ceil(hi + pad);
     const X = i => PL + (data.length === 1 ? iw / 2 : i * iw / (data.length - 1));
     const Y = v => PT + ih - (v - min) / (max - min) * ih;
     const pts = data.map((v, i) => [X(i), Y(v)]);
@@ -406,8 +416,9 @@ const J = (() => {
       axis += `<text class="tr-axis" x="${p[0].toFixed(1)}" y="${H - 6}" text-anchor="middle">${labels[i]}</text>`;
     });
 
+    const srcTag = hasSrv ? '<span class="rp-src">服务端</span>' : '';
     box.innerHTML = `
-      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="近 6 次体态评分趋势">
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="近 ${data.length} 次体态评分趋势">
         <defs>
           <linearGradient id="trFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="var(--c-accent)" stop-opacity=".34"/>
@@ -419,7 +430,23 @@ const J = (() => {
         <path class="tr-line" d="${d}" fill="none" stroke="var(--c-accent)" stroke-width="2.4"
               stroke-linecap="round" stroke-linejoin="round"/>
         ${dots}${axis}
-      </svg>`;
+      </svg>${srcTag}`;
+  }
+
+  /* ---------- 从后端拉取真实趋势，成功则重绘 ---------- */
+  function loadServerTrend() {
+    if (typeof API === 'undefined') return;
+    API.trend(6, state.gender).then(d => {
+      if (!d || !Array.isArray(d.points) || d.points.length < 2) return;
+      buildTrend(d.points);
+      const cap = document.getElementById('trendCap');
+      if (cap) cap.innerHTML = '<span class="rp-src">服务端</span>';
+      // 顺带把「历史趋势」上的检测次数换成真实总数
+      API.stats().then(s => {
+        const el = document.getElementById('trendCount');
+        if (s && el) el.textContent = `共 ${s.count} 次检测`;
+      }).catch(() => {});
+    }).catch(() => {});
   }
 
   /* ---------- 时钟 ---------- */
@@ -437,6 +464,19 @@ const J = (() => {
     clock();
     initGender();
     setInterval(clock, 20000);
+
+    // 后端接入：挂数据源胶囊 + 探测成功后拉真实趋势，并同步用户档案性别
+    if (typeof API !== 'undefined') {
+      try { API.badge('#dsSlot'); } catch (e) {}
+      API.ready().then(ok => {
+        if (!ok) return;
+        loadServerTrend();
+        API.getProfile().then(p => {
+          if (p && p.gender && p.gender !== state.gender) setGender(p.gender, { silent: true });
+        }).catch(() => {});
+      });
+    }
+
     // 键盘演示支持
     document.addEventListener('keydown', e => {
       const map = { '1': 'home', '2': 'capture', '3': 'analyze', '4': 'report-pose', '5': 'report-face', '6': 'health', '7': 'mirror' };
@@ -450,6 +490,6 @@ const J = (() => {
 
   document.addEventListener('DOMContentLoaded', init);
 
-  return { go, setMode, startAnalyze, setAngle, toggleSwitch, slide, toast, state, setGender, buildRadar, buildTrend };
+  return { go, setMode, startAnalyze, setAngle, toggleSwitch, slide, toast, state, setGender, buildRadar, buildTrend, loadServerTrend };
 
 })();
