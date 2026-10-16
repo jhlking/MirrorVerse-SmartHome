@@ -1,0 +1,25 @@
+# 依赖 / 构建产物
+node_modules/
+dist/
+build/
+*.log
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 浏览器无头测试的临时 profile（Edge CDP）
+.edge-tmp/
+.edge-cdp-tmp/
+
+# 调试脚本（本地验证用，不入库）
+_*.py
+_probe*.py
+_verify*.py
+
+# 原始高清截图备份（仓库内使用压缩后的 webp）
+shots_raw/
+*.orig
