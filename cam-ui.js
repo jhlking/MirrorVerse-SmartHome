@@ -402,6 +402,30 @@ const CamUI = (() => {
       mark.style.display = '';
     }
 
+    // 气质雷达：由真实质量指标 + 肤色数据推导（v5.0）
+    try {
+      if (typeof J !== 'undefined' && J.buildRadar) {
+        const q = a.quality || {};
+        const clamp = v => Math.max(24, Math.min(96, Math.round(v)));
+        const bright = q.brightness || 150;
+        // 清晰度：拉普拉斯方差（sharpness 字段，越高越锐）
+        const sharp = clamp(34 + (q.sharpness || 9) * 4.2);
+        // 对比度：灰度标准差（contrast 字段）
+        const cont  = clamp(28 + (q.contrast || 40) * 1.15);
+        // 通透感：亮度居中度（偏离 140 越远越低）
+        const clear = clamp(96 - Math.abs(bright - 140) * 0.42);
+        // 立体感：肤色像素量（面部占比越高越立体）
+        const mass  = clamp(tone ? 38 + Math.min(1, (tone.pixels || 0) / 26000) * 54 : 52);
+        // 匀净度：饱和度落在舒适区间（~34%）最高
+        const sat   = tone ? tone.saturation : 30;
+        const even  = clamp(94 - Math.abs(sat - 34) * 1.3);
+        // 光泽度：暖调 + 明度适中更显光泽
+        const warm  = tone ? tone.coolWarm : 0;
+        const gloss = clamp(56 + warm * 0.5 + (bright > 150 ? 8 : 0));
+        J.buildRadar([sharp, cont, clear, mass, even, gloss]);
+      }
+    } catch (e) { console.warn('[render] radar:', e); }
+
     // 适配色卡
     const swWrap = $('toneSwatches');
     if (swWrap) {

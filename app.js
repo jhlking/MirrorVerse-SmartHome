@@ -238,21 +238,30 @@ const J = (() => {
     }, 90);
   }
 
-  /* ---------- 体态评分动画 ---------- */
+  /* ---------- 体态评分动画（v5.0：环 + 数字同步，expo-out 缓动） ---------- */
   function animateScore() {
     const el  = document.getElementById('scoreNum');
     const fg  = document.getElementById('scoreFg');
     const TOT = 289, target = 86;
-    let cur = 0;
-    fg.style.strokeDashoffset = TOT;
+    if (!fg) return;
 
+    // 环：先归零再描边
+    fg.style.transition = 'none';
+    fg.style.strokeDashoffset = TOT;
+    void fg.getBoundingClientRect();
+    fg.style.transition = '';
     setTimeout(() => { fg.style.strokeDashoffset = TOT - TOT * target / 100; }, 60);
 
-    const t = setInterval(() => {
-      cur += 2;
-      if (cur >= target) { cur = target; clearInterval(t); }
-      el.textContent = cur;
-    }, 26);
+    // 数字：与环同步滚动
+    if (el) {
+      if (typeof FX !== 'undefined' && FX.rollNumber) FX.rollNumber(el, target, 1400);
+      else {
+        let cur = 0; const t = setInterval(() => {
+          cur += 2; if (cur >= target) { cur = target; clearInterval(t); }
+          el.textContent = cur;
+        }, 26);
+      }
+    }
   }
 
   /* ---------- 镜面角度 ---------- */
@@ -305,21 +314,112 @@ const J = (() => {
     toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
   }
 
-  /* ---------- 趋势图 ---------- */
+  /* ---------- 气质雷达图（v5.0） ---------- */
+  // 六个维度：清晰 / 对比 / 通透 / 立体 / 匀净 / 光泽
+  function buildRadar(vals) {
+    const box = document.getElementById('radarChart');
+    if (!box) return;
+    const AX = ['清晰度', '对比度', '通透感', '立体感', '匀净度', '光泽度'];
+    const V = (vals && vals.length === 6) ? vals : [72, 64, 80, 58, 76, 68];
+    const R = 74, CX = 100, CY = 88, N = AX.length;
+    const pt = (i, r) => {
+      const a = -Math.PI / 2 + i * 2 * Math.PI / N;
+      return [CX + Math.cos(a) * r, CY + Math.sin(a) * r];
+    };
+    // 网格（4 层）
+    let grid = '';
+    for (let ring = 1; ring <= 4; ring++) {
+      const r = R * ring / 4;
+      const d = Array.from({ length: N }, (_, i) => {
+        const [x, y] = pt(i, r); return `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ') + ' Z';
+      grid += `<path class="rd-grid" d="${d}"/>`;
+    }
+    // 轴线
+    let spokes = '';
+    for (let i = 0; i < N; i++) {
+      const [x, y] = pt(i, R);
+      spokes += `<line class="rd-grid" x1="${CX}" y1="${CY}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`;
+    }
+    // 数据多边形
+    const shape = V.map((v, i) => {
+      const [x, y] = pt(i, R * Math.max(0.12, Math.min(1, v / 100)));
+      return `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ') + ' Z';
+    // 顶点 + 标签
+    let dots = '', labels = '';
+    V.forEach((v, i) => {
+      const [x, y] = pt(i, R * Math.max(0.12, Math.min(1, v / 100)));
+      dots += `<circle class="rd-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6"><title>${AX[i]} ${v}</title></circle>`;
+      const [lx, ly] = pt(i, R + 15);
+      const anchor = Math.abs(lx - CX) < 6 ? 'middle' : (lx > CX ? 'start' : 'end');
+      labels += `<text class="rd-label" x="${lx.toFixed(1)}" y="${(ly + 3).toFixed(1)}" text-anchor="${anchor}">${AX[i]} ${v}</text>`;
+    });
+
+    box.innerHTML = `
+      <svg viewBox="0 0 200 186" role="img" aria-label="气质维度雷达图">
+        ${grid}${spokes}
+        <path class="rd-shape" d="${shape}"/>
+        ${dots}${labels}
+      </svg>`;
+  }
+
+  /* ---------- 趋势图（v5.0：自绘 SVG 折线 + 面积渐变 + 坐标 + 悬浮点） ---------- */
   function buildTrend() {
-    const data = [72, 75, 79, 82, 84, 86];
+    const data   = [72, 75, 79, 82, 84, 86];
     const labels = ['7/2', '7/9', '7/16', '7/23', '7/30', '8/6'];
     const box = document.getElementById('trendChart');
     if (!box) return;
-    const max = 100, min = 60;
-    box.innerHTML = data.map((v, i) => {
-      const h = Math.max(12, (v - min) / (max - min) * 100);
-      const hi = i === data.length - 1 ? ' hi' : '';
-      return `<div class="bwrap">
-        <div class="bar${hi}" style="height:${h}%" title="${v} 分"></div>
-        <div class="bl">${labels[i]}</div>
-      </div>`;
-    }).join('');
+
+    const W = 272, H = 116, PL = 22, PR = 10, PT = 14, PB = 20;
+    const iw = W - PL - PR, ih = H - PT - PB;
+    const min = 60, max = 92;
+    const X = i => PL + (data.length === 1 ? iw / 2 : i * iw / (data.length - 1));
+    const Y = v => PT + ih - (v - min) / (max - min) * ih;
+    const pts = data.map((v, i) => [X(i), Y(v)]);
+
+    // 平滑折线（Catmull-Rom 转三次贝塞尔）
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+    }
+    const area = `${d} L${pts[pts.length - 1][0]},${PT + ih} L${pts[0][0]},${PT + ih} Z`;
+
+    // 网格线（3 条水平）
+    let grid = '';
+    for (let g = 0; g <= 3; g++) {
+      const y = PT + ih * g / 3;
+      grid += `<line class="tr-grid" x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}"/>`;
+    }
+
+    // 数据点 + 最后一颗高亮
+    let dots = '', axis = '';
+    pts.forEach((p, i) => {
+      const last = i === pts.length - 1;
+      dots += `<circle class="tr-dot${last ? ' tr-hot' : ''}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}"
+               r="${last ? 3.6 : 2.6}" fill="${last ? '#fff' : 'var(--c-accent)'}"
+               style="animation-delay:${(0.5 + i * 0.09).toFixed(2)}s">
+               <title>${labels[i]} · ${data[i]} 分</title></circle>`;
+      axis += `<text class="tr-axis" x="${p[0].toFixed(1)}" y="${H - 6}" text-anchor="middle">${labels[i]}</text>`;
+    });
+
+    box.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="近 6 次体态评分趋势">
+        <defs>
+          <linearGradient id="trFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--c-accent)" stop-opacity=".34"/>
+            <stop offset="100%" stop-color="var(--c-accent)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${grid}
+        <path class="tr-area" d="${area}" fill="url(#trFill)"/>
+        <path class="tr-line" d="${d}" fill="none" stroke="var(--c-accent)" stroke-width="2.4"
+              stroke-linecap="round" stroke-linejoin="round"/>
+        ${dots}${axis}
+      </svg>`;
   }
 
   /* ---------- 时钟 ---------- */
@@ -333,6 +433,7 @@ const J = (() => {
   /* ---------- 初始化 ---------- */
   function init() {
     buildTrend();
+    buildRadar();
     clock();
     initGender();
     setInterval(clock, 20000);
@@ -349,6 +450,6 @@ const J = (() => {
 
   document.addEventListener('DOMContentLoaded', init);
 
-  return { go, setMode, startAnalyze, setAngle, toggleSwitch, slide, toast, state, setGender };
+  return { go, setMode, startAnalyze, setAngle, toggleSwitch, slide, toast, state, setGender, buildRadar, buildTrend };
 
 })();

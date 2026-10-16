@@ -44,8 +44,20 @@
 
   --sh-lg: 0 24px 70px -18px rgba(0, 0, 0, 0.75);
   --sh-glow: 0 0 44px -6px rgba(83, 200, 220, 0.42);
+  --sh-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
-  --ease: cubic-bezier(.22, 1, .36, 1);
+  /* ---------- 动效系统：一套签名曲线 + 时长阶梯 ---------- */
+  /* spring  —— 强调回弹（按钮、开关、卡片入场） */
+  --ease:        cubic-bezier(.22, 1, .36, 1);          /* expo-out：快起稳收 */
+  --e-spring:    cubic-bezier(.34, 1.56, .64, 1);       /* 轻微过冲 */
+  --e-soft:      cubic-bezier(.4, 0, .2, 1);            /* material 标准 */
+  --e-in-out:    cubic-bezier(.65, .05, .36, 1);
+  /* 时长阶梯 */
+  --t-fast:  .16s;   /* 按压、hover */
+  --t-base:  .28s;   /* 常规过渡 */
+  --t-slow:  .52s;   /* 页面切换、卡片入场 */
+  --t-hero:  .9s;    /* 首屏大动画 */
+
   --font: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", -apple-system, "Segoe UI", system-ui, sans-serif;
   --font-num: "SF Mono", "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
 }
@@ -1506,4 +1518,203 @@ body, .stage-bg, .phone, .card, .screen, .btn-primary, .avatar, .mirror-ic,
 
 @media (max-width: 1180px) {
   .gender-switch { justify-content: center; }
+}
+
+/* ===================================================================
+   ★ v5.0 高级质感层 Premium Layer
+   —— 统一动效基调 / 交互反馈 / 数据可视化 / 排版精修
+   约定：本节为「覆盖层」，只做增强，不改变既有布局尺寸。
+   =================================================================== */
+
+/* ---------- 1. 全局动效基调 ---------- */
+/* 收敛泛化 ease -> 签名曲线；给参与动画的属性加 GPU 合成提示 */
+.btn, .btn-primary, .btn-ghost, .quick, .tab, .chip,
+.gs-opt, .gp-opt, .mode-switch .m, .icon-btn, .fab {
+  transition-timing-function: var(--e-spring);
+  will-change: transform;
+}
+.card, .home-hero, .phone, .report-card, .pillar, .voice-feature {
+  transition-timing-function: var(--ease);
+}
+
+/* 卡片入场：错落淡入上浮（替代单调 ease） */
+@keyframes jj-rise {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+.fade-up { animation: jj-rise var(--t-slow) var(--ease) backwards; }
+.fade-up.d1 { animation-delay: .07s; }
+.fade-up.d2 { animation-delay: .14s; }
+.fade-up.d3 { animation-delay: .21s; }
+.fade-up.d4 { animation-delay: .28s; }
+
+/* 首屏品牌区：分级入场 */
+@keyframes jj-brand-in {
+  from { opacity: 0; transform: translateY(20px); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+.brand-mark, .brand h1, .brand .sub-en, .brand .tagline { animation: jj-brand-in var(--t-hero) var(--ease) backwards; }
+.brand h1 { animation-delay: .06s; }
+.brand .sub-en { animation-delay: .12s; }
+.brand .tagline { animation-delay: .18s; }
+.pillars .pillar { animation: jj-brand-in .8s var(--ease) backwards; }
+.pillars .pillar:nth-child(1) { animation-delay: .26s; }
+.pillars .pillar:nth-child(2) { animation-delay: .34s; }
+.pillars .pillar:nth-child(3) { animation-delay: .42s; }
+
+/* ---------- 2. 交互反馈：按压回弹 / 光晕跟随 / 水波纹 ---------- */
+.btn, .btn-primary, .btn-ghost { position: relative; overflow: hidden; }
+.btn:active, .btn-primary:active, .btn-ghost:active { transform: scale(.972); }
+.btn-primary:hover { box-shadow: 0 16px 40px -14px rgba(var(--c-accent-rgb), .8); }
+.btn-ghost:hover { border-color: var(--c-border-hi); background: rgba(var(--c-accent-rgb), .06); }
+
+/* 卡片 hover：边框点亮 + 光斑跟随鼠标（--mx/--my 由 JS 写入） */
+.quick, .card, .report-card { position: relative; }
+.quick::after, .card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 0%),
+              rgba(var(--c-accent-rgb), .10), transparent 65%);
+  opacity: 0; transition: opacity var(--t-base) var(--ease); pointer-events: none;
+}
+.quick:hover::after, .card:hover::after { opacity: 1; }
+.card { transition: transform var(--t-base) var(--ease), border-color var(--t-base) var(--ease),
+                    box-shadow var(--t-base) var(--ease); }
+.card:hover { transform: translateY(-2px); border-color: var(--c-border-hi); }
+.quick { transition: transform var(--t-base) var(--e-spring), border-color var(--t-base) var(--ease),
+                    box-shadow var(--t-base) var(--ease); }
+.quick:hover { transform: translateY(-3px) scale(1.012); }
+
+/* 水波纹 */
+.jj-ripple {
+  position: absolute; border-radius: 50%; transform: scale(0); pointer-events: none;
+  background: radial-gradient(circle, rgba(255,255,255,.42), transparent 70%);
+  animation: jj-ripple .62s var(--ease) forwards;
+}
+@keyframes jj-ripple { to { transform: scale(2.6); opacity: 0; } }
+
+/* Tab 切换指示条滑动 */
+.tab { position: relative; }
+.tab .ti { transition: transform var(--t-base) var(--e-spring); }
+.tab:hover .ti { transform: translateY(-2px) scale(1.08); }
+.tab.on .ti { filter: drop-shadow(0 0 8px rgba(var(--c-accent-rgb), .8)); }
+
+/* ---------- 3. 数据可视化增强 ---------- */
+/* 趋势图：折线 + 面积渐变 + 坐标 + 悬浮点 */
+/* 覆盖旧版柱状图的固定高度约束，改由 SVG 自适应 */
+.trend { position: relative; display: block; height: auto; padding-top: 0; gap: 0; }
+.trend svg { display: block; width: 100%; height: auto; overflow: visible; }
+.trend .tr-area { opacity: 0; animation: jj-fade-in .9s var(--ease) .25s forwards; }
+.trend .tr-line {
+  stroke-dasharray: 620; stroke-dashoffset: 620;
+  animation: jj-draw 1.5s var(--ease) .15s forwards;
+  filter: drop-shadow(0 3px 10px rgba(var(--c-accent-rgb), .5));
+}
+.trend .tr-dot { opacity: 0; animation: jj-pop .5s var(--e-spring) forwards; }
+.trend .tr-grid { stroke: rgba(150, 200, 255, .08); stroke-width: 1; }
+.trend .tr-axis { font-family: var(--font-num); font-size: 9px; fill: var(--c-text-mute); }
+@keyframes jj-draw { to { stroke-dashoffset: 0; } }
+@keyframes jj-pop  { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+@keyframes jj-fade-in { to { opacity: 1; } }
+.trend .tr-hot { fill: #fff; filter: drop-shadow(0 0 6px rgba(var(--c-accent-rgb), 1)); }
+
+/* 评分环：SVG 描边动画 */
+.score-ring { position: relative; display: grid; place-items: center; }
+.score-ring svg { transform: rotate(-90deg); }
+.score-ring .sr-track { stroke: rgba(150, 200, 255, .1); }
+.score-ring .sr-val {
+  stroke: url(#ringGrad); stroke-linecap: round;
+  filter: drop-shadow(0 0 10px rgba(var(--c-accent-rgb), .55));
+  transition: stroke-dashoffset 1.4s var(--ease);
+}
+.score-ring .sr-num { position: absolute; font-family: var(--font-num); font-weight: 700; }
+
+/* 气质雷达图 */
+.radar svg { display: block; margin: 0 auto; overflow: visible; }
+.radar .rd-grid { fill: none; stroke: rgba(150, 200, 255, .13); }
+.radar .rd-shape {
+  fill: rgba(var(--c-accent-rgb), .18);
+  stroke: var(--c-accent); stroke-width: 1.6;
+  filter: drop-shadow(0 0 8px rgba(var(--c-accent-rgb), .4));
+  transform-origin: center; animation: jj-radar .9s var(--e-spring) forwards;
+}
+@keyframes jj-radar { from { transform: scale(.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.radar .rd-label { font-size: 9px; fill: var(--c-text-dim); }
+.radar .rd-dot { fill: var(--c-accent); }
+
+/* 色卡：微光泽与抬升 */
+.swatch {
+  transition: transform var(--t-base) var(--e-spring), box-shadow var(--t-base) var(--ease);
+  box-shadow: var(--sh-inset), 0 4px 14px -6px rgba(0,0,0,.6);
+}
+.swatch:hover { transform: translateY(-3px) scale(1.06); box-shadow: 0 10px 24px -8px rgba(0,0,0,.7); }
+
+/* 数字滚动（等宽防抖） */
+.num-roll { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* ---------- 4. 整体质感与排版精修 ---------- */
+/* 玻璃拟态分层：外描边 + 内高光 + 外阴影三层 */
+.phone, .card, .home-hero, .report-card {
+  box-shadow: var(--sh-inset), var(--sh-lg);
+}
+/* 顶边一像素高光，模拟玻璃棱边 */
+.card, .report-card { position: relative; }
+.card::before, .report-card::before {
+  content: ""; position: absolute; left: 12%; right: 12%; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+  pointer-events: none;
+}
+
+/* 标题渐变微光流动 */
+.brand h1 .grad {
+  background-size: 200% 100%;
+  animation: jj-sheen 6s var(--e-in-out) infinite;
+}
+@keyframes jj-sheen { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+/* 噪点纹理：消除大面积渐变的塑料感 */
+.layout::after {
+  content: ""; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  opacity: .035; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* 滚动条美化（手机屏内） */
+.scroll { scrollbar-width: thin; scrollbar-color: rgba(var(--c-accent-rgb), .35) transparent; }
+.scroll::-webkit-scrollbar { width: 5px; }
+.scroll::-webkit-scrollbar-thumb {
+  background: rgba(var(--c-accent-rgb), .32); border-radius: 10px;
+}
+.scroll::-webkit-scrollbar-thumb:hover { background: rgba(var(--c-accent-rgb), .55); }
+.scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* 文字选中态统一为强调色 */
+::selection { background: rgba(var(--c-accent-rgb), .3); color: var(--c-text); }
+
+/* 焦点可见性（无障碍） */
+:focus-visible { outline: 2px solid rgba(var(--c-accent-rgb), .7); outline-offset: 2px; border-radius: 6px; }
+
+/* 骨架屏 */
+@keyframes jj-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+.skeleton {
+  background: linear-gradient(90deg, rgba(150,200,255,.05) 25%, rgba(150,200,255,.13) 50%, rgba(150,200,255,.05) 75%);
+  background-size: 200% 100%; animation: jj-shimmer 1.5s linear infinite; border-radius: 8px;
+}
+
+/* Toast 升级：玻璃质感 + 上滑入场 */
+.toast {
+  backdrop-filter: blur(18px) saturate(1.4);
+  box-shadow: var(--sh-inset), 0 18px 50px -16px rgba(0,0,0,.85),
+              0 0 0 1px rgba(var(--c-accent-rgb), .16);
+}
+.toast.show { animation: jj-toast-in .5s var(--e-spring) forwards; }
+@keyframes jj-toast-in { from { opacity: 0; transform: translate(-50%, 18px) scale(.94); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+
+/* 滚动渐显（JS IntersectionObserver 加 .in） */
+.reveal { opacity: 0; transform: translateY(18px);
+  transition: opacity .7s var(--ease), transform .7s var(--ease); }
+.reveal.in { opacity: 1; transform: none; }
+
+/* 尊重系统「减少动态效果」偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
