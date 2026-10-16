@@ -15,6 +15,7 @@
     API 文档   http://127.0.0.1:8899/api/health
 """
 import argparse
+import importlib.util
 import os
 import signal
 import sys
@@ -23,13 +24,28 @@ import time
 import webbrowser
 from pathlib import Path
 
-# 允许以脚本方式直接运行（python server.py）
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+# ── 让「脚本直跑」与「包导入」共存 ───────────────────────────────
+# 本文件叫 server.py，同级又有 server/ 包；Python 查找顺序是「模块优先于包」，
+# 因此 import server 会命中 server.py 自身而非 server/ 包。
+# 解决：用显式 spec 把同级的 server/ 包按其目录加载并预注册进 sys.modules，
+# 后续 `from server.xxx import ...` 便统一解析到包内，稳定可靠。
+_HERE = Path(__file__).resolve().parent
+_PKG_DIR = _HERE / "server"
+if _PKG_DIR.is_dir():
+    _spec = importlib.util.spec_from_file_location(
+        "server", str(_PKG_DIR / "__init__.py"),
+        submodule_search_locations=[str(_PKG_DIR)],
+    )
+    _pkg = importlib.util.module_from_spec(_spec)
+    sys.modules["server"] = _pkg
+    _spec.loader.exec_module(_pkg)
+    if str(_HERE) not in sys.path:
+        sys.path.insert(0, str(_HERE))
 
-from server import config, db          # noqa: E402
-from server.httpd import App, make_server   # noqa: E402
-from server.logger import setup, get   # noqa: E402
-from server.routes import api          # noqa: E402
+from server import config, db                    # noqa: E402
+from server.httpd import App, make_server        # noqa: E402
+from server.logger import setup, get             # noqa: E402
+from server.routes import api                    # noqa: E402
 
 log = get("main")
 

@@ -24,9 +24,10 @@ desktop.ini
 .edge-cdp-tmp/
 
 # 调试脚本（本地验证用，不入库）
-_*.py
-_probe*.py
-_verify*.py
+# 注意：必须用「/」锚定到仓库根目录，否则会误伤包内的 __init__.py
+/_*.py
+!/__init__.py
+!/**/__init__.py
 
 # 原始高清截图备份（仓库内使用压缩后的 webp）
 shots_raw/
