@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>镜界 JINGJIE · AI 智美形象管家</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ 舞台背景 ============ -->
+<div class="stage-bg">
+  <div class="orb a"></div>
+  <div class="orb b"></div>
+  <div class="orb c"></div>
+</div>
+
+<!-- 全局 SVG 渐变定义 -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="var(--c-accent)"/>
+      <stop offset="55%" stop-color="var(--c-accent-2)"/>
+      <stop offset="100%" stop-color="var(--c-accent-3)"/>
+    </linearGradient>
+    <linearGradient id="ringGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="var(--c-accent)"/>
+      <stop offset="60%" stop-color="var(--c-accent-2)"/>
+      <stop offset="100%" stop-color="var(--c-accent-3)"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="layout">
+
+  <!-- ============ 左侧品牌区 ============ -->
+  <div class="brand">
+    <div class="brand-mark">
+      <span class="dot"></span>
+      AI 智美形象管家 · 原型演示
+    </div>
+
+    <h1>镜界<br><span class="grad">JINGJIE</span></h1>
+    <div class="sub-en">Smart Living · Smart Mirror</div>
+
+    <p class="tagline">
+      一面会思考的落地镜。复用<b>一次全身人像采集</b>，
+      同步完成 <b>AI 体态风险筛查</b> 与 <b>面部美学诊断</b>，
+      30 秒输出矫正、穿搭、妆容全套个性化方案。
+    </p>
+
+    <div class="pillars">
+      <div class="pillar">
+        <div class="ic">体</div>
+        <div>
+          <div class="tt">AI 体态风险筛查</div>
+          <div class="dd">33 点骨骼关键点 · 量化高低肩 / 头前伸 / 骨盆侧倾</div>
+        </div>
+      </div>
+      <div class="pillar">
+        <div class="ic">美</div>
+        <div>
+          <div class="tt">面部美学诊断</div>
+          <div class="dd">68 点特征 · 三庭五眼 · HSV 冷暖肤色判定</div>
+        </div>
+      </div>
+      <div class="pillar">
+        <div class="ic">镜</div>
+        <div>
+          <div class="tt">闭环交互体验</div>
+          <div class="dd">采集 → 分析 → 多角度现场调整，镜面电控旋转</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="brand-cta">
+      <button class="btn-ghost" onclick="J.go('capture')">▶&nbsp; 开始演示</button>
+      <span class="hint-arrow">← 点击右侧手机屏，走完整流程</span>
+    </div>
+
+    <!-- 性别切换：切换后整套配色与建议文案同步改变 -->
+    <div class="gender-switch">
+      <span class="gs-label">使用模式</span>
+      <div class="gs-seg" role="radiogroup" aria-label="性别模式">
+        <button class="gs-opt on" data-gender="male" role="radio" aria-checked="true"
+                onclick="J.setGender('male')"><span class="gs-ic">♂</span>男生</button>
+        <button class="gs-opt" data-gender="female" role="radio" aria-checked="false"
+                onclick="J.setGender('female')"><span class="gs-ic">♀</span>女生</button>
+        <span class="gs-thumb"></span>
+      </div>
+    </div>
+
+    <div class="voice-feature" style="margin-top:30px;margin-bottom:0">
+      <div class="vfi">🔊</div>
+      <div>
+        <div class="vft">AI 语音播报
+          <span class="mini-wave"><i></i><i></i><i></i><i></i><i></i></span>
+        </div>
+        <div class="vfd">
+          检测完成后自动<b>语音播报</b>报告结论，屏幕同步显示<b>实时字幕与声波</b>。
+          支持暂停、重播、静音，四套播报文稿已内置。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 手机模拟器 ============ -->
+  <div class="phone-wrap">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+
+      <div class="statusbar">
+        <span id="clock">21:06</span>
+        <span class="icons">
+          <span class="sig"><i></i><i></i><i></i><i></i></span>
+          <span style="font-size:11px">5G</span>
+          <span class="batt"></span>
+        </span>
+      </div>
+
+      <!-- 屏内性别切换胶囊 -->
+      <div class="gender-pill" id="genderPill">
+        <button class="gp-opt on" data-gender="male" onclick="J.setGender('male')">♂</button>
+        <button class="gp-opt" data-gender="female" onclick="J.setGender('female')">♀</button>
+        <span class="gp-thumb"></span>
+      </div>
+
+      <div class="pages">
+
+        <!-- ================= P1 首页 ================= -->
+        <section class="page active" id="p-home">
+          <div class="scroll">
+            <div class="home-hero fade-up">
+              <div class="hh-top">
+                <div>
+                  <div class="hh-greet">晚上好，欢迎回来</div>
+                  <div class="hh-name">今日状态如何？</div>
+                </div>
+                <div class="avatar">镜</div>
+              </div>
+              <div class="hh-mirror">
+                <div class="mirror-ic"></div>
+                <div>
+                  <div class="mt">镜界 · 智能落地镜</div>
+                  <div class="md">已连接 · 玄关 01</div>
+                </div>
+                <div class="online"><span class="led"></span>在线</div>
+              </div>
+              <button class="btn btn-primary" onclick="J.go('capture')">
+                ⬤&nbsp; 开始形象检测
+              </button>
+            </div>
+
+            <div class="quick-grid fade-up d1">
+              <button class="quick" onclick="J.go('report-pose')">
+                <div class="qi">🦴</div>
+                <div class="qt">体态报告</div>
+                <div class="qd">上次评分 86 分</div>
+              </button>
+              <button class="quick" onclick="J.go('report-face')">
+                <div class="qi">💠</div>
+                <div class="qt">美学报告</div>
+                <div class="qd">冷调·冬型肤色</div>
+              </button>
+              <button class="quick" onclick="J.go('mirror')">
+                <div class="qi">🪞</div>
+                <div class="qt">镜面控制</div>
+                <div class="qd">旋转 / 补光 / 移动</div>
+              </button>
+              <button class="quick" onclick="J.toast('历史记录已同步至云端 ☁')">
+                <div class="qi">📈</div>
+                <div class="qt">历史趋势</div>
+                <div class="qd">共 12 次检测</div>
+              </button>
+            </div>
+
+            <div class="sec-label">近 6 次体态评分</div>
+            <div class="card fade-up d2">
+              <div class="trend" id="trendChart"></div>
+            </div>
+
+            <div class="sec-label">今日建议</div>
+            <div class="card fade-up d3" onclick="J.go('report-pose')" style="cursor:pointer">
+              <div class="card-title"><span class="bar"></span>体态矫正 · 重点关注</div>
+              <div style="font-size:12.5px;line-height:1.75;color:var(--c-text-dim)">
+                检测到轻度<b style="color:#fda4af"> 头前伸 </b>倾向，建议今日完成 2 组
+                「收下巴」训练，每组 15 次，配合靠墙站立 3 分钟。
+              </div>
+              <div style="display:flex;gap:7px;margin-top:13px;flex-wrap:wrap">
+                <span class="chip warn">头前伸 +4.2°</span>
+                <span class="chip info">建议训练 8 分钟</span>
+              </div>
+            </div>
+          </div>
+          <nav class="tabbar">
+            <button class="tab on"><span class="ti">⌂</span>首页</button>
+            <button class="tab" onclick="J.go('capture')"><span class="ti">◎</span>检测</button>
+            <button class="tab" onclick="J.go('report-pose')"><span class="ti">▤</span>报告</button>
+            <button class="tab" onclick="J.go('mirror')"><span class="ti">⚙</span>镜控</button>
+          </nav>
+        </section>
+
+        <!-- ================= P2 拍摄引导 ================= -->
+        <section class="page" id="p-capture">
+          <div class="cam-view">
+            <div class="cam-topbar">
+              <div class="back2" onclick="J.go('home')">‹</div>
+              <div class="mode-switch">
+                <button class="m on" id="modeFront" onclick="J.setMode('front')">正面</button>
+                <button class="m" id="modeSide" onclick="J.setMode('side')">侧面</button>
+              </div>
+              <div style="width:36px"></div>
+            </div>
+
+            <div class="cam-tips">
+              <div class="tip-pill"><span class="spin"></span><span id="tipText">请站入取景框，保持自然站立</span></div>
+            </div>
+
+            <div class="cam-stage">
+              <!-- 真实摄像头画面 -->
+              <video id="camVideo" class="cam-video" autoplay playsinline muted></video>
+              <div class="cam-shade"></div>
+              <!-- 实时人脸检测框 -->
+              <div class="face-detect" id="faceDetect" style="display:none">
+                <div class="fd-corner tl"></div><div class="fd-corner tr"></div>
+                <div class="fd-corner bl"></div><div class="fd-corner br"></div>
+                <div class="fd-label" id="fdLabel">已识别 · 肤色 82%</div>
+              </div>
+
+              <div class="frame" id="capFrame">
+                <div class="corner tl"></div><div class="corner tr"></div>
+                <div class="corner bl"></div><div class="corner br"></div>
+                <div class="scanline"></div>
+              </div>
+
+              <!-- 无摄像头时的降级剪影 -->
+              <div class="silhouette" id="capSilhouette">
+                <svg viewBox="0 0 200 400" fill="none">
+                  <defs>
+                    <linearGradient id="humanG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="var(--c-accent)" stop-opacity=".55"/>
+                      <stop offset="100%" stop-color="var(--c-accent-2)" stop-opacity=".18"/>
+                    </linearGradient>
+                  </defs>
+                  <ellipse cx="100" cy="46" rx="26" ry="32" fill="url(#humanG)" stroke="var(--c-accent)" stroke-width="1.6"/>
+                  <rect x="92" y="74" width="16" height="18" fill="url(#humanG)" stroke="var(--c-accent)" stroke-width="1.2"/>
+                  <path d="M68 92 Q100 84 132 92 L136 200 Q100 208 64 200 Z" fill="url(#humanG)" stroke="var(--c-accent)" stroke-width="1.6"/>
+                  <path d="M68 96 Q50 140 46 196" stroke="var(--c-accent)" stroke-width="13" stroke-linecap="round" opacity=".55"/>
+                  <path d="M68 96 Q50 140 46 196" stroke="var(--c-accent)" stroke-width="1.4" fill="none"/>
+                  <path d="M132 96 Q150 140 154 196" stroke="var(--c-accent)" stroke-width="13" stroke-linecap="round" opacity=".55"/>
+                  <path d="M132 96 Q150 140 154 196" stroke="var(--c-accent)" stroke-width="1.4" fill="none"/>
+                  <path d="M66 202 L134 202 L128 238 L72 238 Z" fill="url(#humanG)" stroke="var(--c-accent)" stroke-width="1.5"/>
+                  <path d="M78 238 L74 320 L72 380" stroke="var(--c-accent)" stroke-width="15" stroke-linecap="round" opacity=".5"/>
+                  <path d="M122 238 L126 320 L128 380" stroke="var(--c-accent)" stroke-width="15" stroke-linecap="round" opacity=".5"/>
+                  <g fill="var(--c-accent)">
+                    <circle cx="100" cy="18" r="2.6"/><circle cx="100" cy="46" r="2.6"/>
+                    <circle cx="88" cy="40" r="2"/><circle cx="112" cy="40" r="2"/>
+                    <circle cx="100" cy="86" r="2.6"/>
+                    <circle cx="66" cy="94" r="2.6"/><circle cx="134" cy="94" r="2.6"/>
+                    <circle cx="46" cy="198" r="2.2"/><circle cx="154" cy="198" r="2.2"/>
+                    <circle cx="72" cy="204" r="2.6"/><circle cx="128" cy="204" r="2.6"/>
+                    <circle cx="66" cy="238" r="2.6"/><circle cx="134" cy="238" r="2.6"/>
+                    <circle cx="72" cy="380" r="2.2"/><circle cx="128" cy="380" r="2.2"/>
+                  </g>
+                </svg>
+              </div>
+
+              <!-- 摄像头状态提示 -->
+              <div class="cam-status" id="camStatus">
+                <span class="cs-ic">📷</span>
+                <span class="cs-tx" id="camStatusTx">正在启动摄像头…</span>
+                <button class="cs-btn" id="camRetry" onclick="CamUI.retry()" style="display:none">重试</button>
+              </div>
+
+              <!-- 待点击开启（首次授权需用户手势） -->
+              <button class="cam-start" id="camStart" onclick="CamUI.enable()" style="display:none">
+                <span class="csx-ic">📷</span>
+                <span class="csx-t">点击开启摄像头</span>
+                <span class="csx-d">用于体态与肤色实时分析 · 画面仅在本机处理</span>
+              </button>
+
+              <!-- 实时环境指标 -->
+              <div class="live-metrics" id="liveMetrics" style="display:none">
+                <div class="lm"><b id="lmBright">--</b><span>亮度</span></div>
+                <div class="lm"><b id="lmSharp">--</b><span>清晰</span></div>
+                <div class="lm"><b id="lmFace">--</b><span>人脸</span></div>
+              </div>
+            </div>
+
+            <div class="cam-bottom">
+              <div class="metrics-row">
+                <div class="metric-pill"><div class="mv" id="mKp">33</div><div class="mk">关键点</div></div>
+                <div class="metric-pill"><div class="mv" id="mLight">92%</div><div class="mk">补光强度</div></div>
+                <div class="metric-pill"><div class="mv" id="mDist">2.4m</div><div class="mk">拍摄距离</div></div>
+              </div>
+              <div class="shutter-row">
+                <div class="shutter-side" title="切换补光" onclick="CamUI.toggleLight()">💡</div>
+                <div class="shutter" onclick="CamUI.capture()" title="拍照分析"></div>
+                <div class="shutter-side" title="切换摄像头" onclick="CamUI.switchCamera()">🔄</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= P3 分析等待 ================= -->
+        <section class="page" id="p-analyze">
+          <div class="analyze-wrap">
+            <div class="ring-wrap">
+              <div class="orbit">
+                <i></i><i></i><i></i>
+              </div>
+              <div class="orbit rev">
+                <i></i><i></i>
+              </div>
+              <svg viewBox="0 0 216 216">
+                <circle class="ring-bg" cx="108" cy="108" r="95"/>
+                <circle class="ring-fg" id="ringFg" cx="108" cy="108" r="95"/>
+              </svg>
+              <div class="ring-core">
+                <div class="ring-pct"><span id="pctNum">0</span><span>%</span></div>
+                <div class="ring-lb">Analyzing</div>
+              </div>
+            </div>
+
+            <div class="steps-list" id="stepsList">
+              <div class="step-row" data-i="0">
+                <div class="si">1</div>
+                <div><div class="stx">人像采集与预处理</div><div class="sdd">环形补光 · 背景分离</div></div>
+                <div class="spct">等待</div>
+              </div>
+              <div class="step-row" data-i="1">
+                <div class="si">2</div>
+                <div><div class="stx">MediaPipe 骨骼关键点提取</div><div class="sdd">33 点姿态识别</div></div>
+                <div class="spct">等待</div>
+              </div>
+              <div class="step-row" data-i="2">
+                <div class="si">3</div>
+                <div><div class="stx">体态偏差量化计算</div><div class="sdd">肩/骨盆/脊柱角度</div></div>
+                <div class="spct">等待</div>
+              </div>
+              <div class="step-row" data-i="3">
+                <div class="si">4</div>
+                <div><div class="stx">面部特征与肤色分析</div><div class="sdd">68 点 · HSV 色彩空间</div></div>
+                <div class="spct">等待</div>
+              </div>
+              <div class="step-row" data-i="4">
+                <div class="si">5</div>
+                <div><div class="stx">大模型生成个性化方案</div><div class="sdd">矫正 · 穿搭 · 妆容</div></div>
+                <div class="spct">等待</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= P4 体态报告 ================= -->
+        <section class="page" id="p-report-pose">
+          <div class="ph-head">
+            <div class="back" onclick="J.go('home')">‹</div>
+            <div><div class="tt">体态健康报告</div><div class="st">检测时间 2026-10-16 21:06 · 置信度 96%</div></div>
+          </div>
+          <div class="scroll">
+            <div class="report-hero fade-up">
+              <div class="score-row">
+                <div class="score-ring">
+                  <svg viewBox="0 0 108 108">
+                    <circle class="bg2" cx="54" cy="54" r="46"/>
+                    <circle class="fg2" id="scoreFg" cx="54" cy="54" r="46"/>
+                  </svg>
+                  <div class="score-num"><b id="scoreNum">0</b><i>体态评分</i></div>
+                </div>
+                <div class="score-info">
+                  <h3>整体体态良好</h3>
+                  <p>存在 <b style="color:#fcd34d">2 项轻度</b> 偏移，建议针对性训练改善。</p>
+                  <div class="score-tags">
+                    <span class="chip ok">骨盆正常</span>
+                    <span class="chip warn">肩线轻度</span>
+                    <span class="chip bad">头前伸</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sec-label">关键点骨架可视化</div>
+            <div class="pose-box fade-up d1">
+              <div class="grid-bg"></div>
+              <svg class="pose-svg" viewBox="0 0 200 296">
+                <!-- 骨架 -->
+                <path class="bone" d="M100 20 L100 52" />
+                <path class="bone" d="M100 52 L100 88" />
+                <path class="bone" d="M100 88 L74 96 L62 140 L52 186" />
+                <path class="bone" d="M100 88 L126 96 L138 140 L148 186" />
+                <path class="bone" d="M100 88 L76 176 L74 210" />
+                <path class="bone" d="M100 88 L124 176 L126 210" />
+                <path class="bone" d="M74 210 L134 210" />
+                <path class="bone" d="M74 210 L82 252 L80 292" />
+                <path class="bone" d="M134 210 L126 252 L128 292" />
+                <path class="bone" d="M74 68 L126 68" />
+                <!-- 肩线基准 -->
+                <line class="guide" x1="70" y1="96" x2="130" y2="96" stroke="rgba(126,232,221,.5)" stroke-width="1" stroke-dasharray="4 3"/>
+                <!-- 骨盆基准 -->
+                <line class="guide" x1="70" y1="210" x2="130" y2="210" stroke="rgba(126,232,221,.5)" stroke-width="1" stroke-dasharray="4 3"/>
+                <!-- 偏差标注：头前伸 -->
+                <path class="devi" d="M100 20 L114 20"/>
+                <text class="devlbl" x="116" y="23">头前伸 +4.2°</text>
+                <!-- 偏差标注：肩倾斜 -->
+                <path class="devi" d="M74 96 L74 106"/>
+                <path class="devi" d="M126 106 L126 96"/>
+                <path class="devi" d="M74 104 L126 104"/>
+                <text class="devlbl" x="130" y="107">肩倾 2.1°</text>
+                <!-- 关节 -->
+                <g>
+                  <circle class="jn" cx="100" cy="20" r="3"/>
+                  <circle class="jn ab" cx="100" cy="52" r="3"/>
+                  <circle class="jn" cx="74" cy="96" r="3.4"/>
+                  <circle class="jn ab" cx="126" cy="96" r="3.4"/>
+                  <circle class="jn" cx="62" cy="140" r="2.8"/>
+                  <circle class="jn" cx="138" cy="140" r="2.8"/>
+                  <circle class="jn" cx="52" cy="186" r="2.8"/>
+                  <circle class="jn" cx="148" cy="186" r="2.8"/>
+                  <circle class="jn" cx="100" cy="88" r="3.4"/>
+                  <circle class="jn" cx="76" cy="176" r="2.8"/>
+                  <circle class="jn" cx="124" cy="176" r="2.8"/>
+                  <circle class="jn" cx="74" cy="210" r="3.4"/>
+                  <circle class="jn" cx="134" cy="210" r="3.4"/>
+                  <circle class="jn" cx="82" cy="252" r="2.8"/>
+                  <circle class="jn" cx="126" cy="252" r="2.8"/>
+                  <circle class="jn" cx="80" cy="292" r="2.8"/>
+                  <circle class="jn" cx="128" cy="292" r="2.8"/>
+                </g>
+              </svg>
+            </div>
+
+            <div class="sec-label">体态偏差明细</div>
+            <div class="deviation-list fade-up d2">
+              <div class="dev-item bad">
+                <div class="di">🎯</div>
+                <div><div class="dn">头前伸</div><div class="ds">耳垂偏离肩峰垂直参考线</div></div>
+                <div class="dv"><div class="dvv">+4.2°</div><div class="dvl">中度偏移</div></div>
+              </div>
+              <div class="dev-item warn">
+                <div class="di">⚖</div>
+                <div><div class="dn">高低肩</div><div class="ds">双肩连线与水平线夹角</div></div>
+                <div class="dv"><div class="dvv">2.1°</div><div class="dvl">轻度偏移</div></div>
+              </div>
+              <div class="dev-item ok">
+                <div class="di">✓</div>
+                <div><div class="dn">骨盆倾斜</div><div class="ds">髂前上棘水平偏差</div></div>
+                <div class="dv"><div class="dvv">0.8°</div><div class="dvl">正常范围</div></div>
+              </div>
+              <div class="dev-item ok">
+                <div class="di">✓</div>
+                <div><div class="dn">脊柱侧弯</div><div class="ds">脊柱中轴偏离程度</div></div>
+                <div class="dv"><div class="dvv">1.1°</div><div class="dvl">正常范围</div></div>
+              </div>
+            </div>
+
+            <div class="sec-label">AI 矫正建议</div>
+            <div class="card fade-up d3">
+              <div class="card-title"><span class="bar"></span>线上方案 · 每日 8 分钟</div>
+              <div style="font-size:12.5px;line-height:1.8;color:var(--c-text-dim)">
+                优先改善<b style="color:#fda4af">头前伸</b>：每日 2 组「收下巴」（每组 15 次），
+                配合靠墙站立 3 分钟重建颈深屈肌记忆。
+                肩线偏移属轻度，可通过<b style="color:#fcd34d">胸椎伸展</b>与单侧拉背纠正。
+              </div>
+              <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
+                <span class="chip info">收下巴训练</span>
+                <span class="chip info">靠墙站立</span>
+                <span class="chip warn">胸椎伸展</span>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:11px;margin-top:16px">
+              <button class="btn btn-soft" onclick="J.go('report-face')" style="flex:1">查看美学报告</button>
+              <button class="btn btn-primary" onclick="J.toast('方案已加入每日训练计划 ✓')" style="flex:1.3">加入训练计划</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= P5 美学报告 ================= -->
+        <section class="page" id="p-report-face">
+          <div class="ph-head">
+            <div class="back" onclick="J.go('report-pose')">‹</div>
+            <div><div class="tt">面部美学报告</div><div class="st">真实采集 · YCbCr 肤色分析</div></div>
+            <div class="conf-badge" style="margin-left:auto"><span class="dot"></span><span id="confVal">--</span></div>
+          </div>
+          <div class="scroll">
+            <div class="face-box fade-up">
+              <div class="grid-bg" style="position:absolute;inset:0"></div>
+              <svg class="face-svg" viewBox="0 0 180 262">
+                <!-- 面部轮廓 -->
+                <path class="outline" d="M90 16 C60 16 44 40 44 74 C44 108 54 132 68 152 C76 164 84 174 90 180 C96 174 104 164 112 152 C126 132 136 108 136 74 C136 40 120 16 90 16 Z"/>
+                <!-- 三庭参考线 -->
+                <line class="guide" x1="34" y1="62" x2="146" y2="62"/>
+                <line class="guide" x1="34" y1="118" x2="146" y2="118"/>
+                <line class="guide" x1="34" y1="164" x2="146" y2="164"/>
+                <text class="glbl" x="4" y="60">发际</text>
+                <text class="glbl" x="4" y="116">眉</text>
+                <text class="glbl" x="4" y="162">鼻底</text>
+                <text class="glbl" x="4" y="186">颏</text>
+                <!-- 五眼竖线 -->
+                <line class="guide" x1="44" y1="86" x2="44" y2="140"/>
+                <line class="guide" x1="62" y1="86" x2="62" y2="140"/>
+                <line class="guide" x1="90" y1="86" x2="90" y2="140"/>
+                <line class="guide" x1="118" y1="86" x2="118" y2="140"/>
+                <line class="guide" x1="136" y1="86" x2="136" y2="140"/>
+                <!-- 特征点 -->
+                <g>
+                  <circle class="fp" cx="62" cy="92" r="2.4"/><circle class="fp" cx="78" cy="80" r="2.4"/><circle class="fp" cx="102" cy="80" r="2.4"/><circle class="fp" cx="118" cy="92" r="2.4"/>
+                  <circle class="fp" cx="70" cy="92" r="1.8"/><circle class="fp" cx="110" cy="92" r="1.8"/>
+                  <circle class="fp" cx="62" cy="106" r="1.6"/><circle class="fp" cx="118" cy="106" r="1.6"/>
+                  <circle class="fp" cx="90" cy="88" r="2"/><circle class="fp" cx="90" cy="106" r="2.2"/>
+                  <circle class="fp" cx="72" cy="118" r="1.6"/><circle class="fp" cx="108" cy="118" r="1.6"/>
+                  <circle class="fp" cx="78" cy="132" r="1.8"/><circle class="fp" cx="102" cy="132" r="1.8"/>
+                  <circle class="fp" cx="90" cy="138" r="1.8"/>
+                  <circle class="fp" cx="60" cy="120" r="1.5"/><circle class="fp" cx="120" cy="120" r="1.5"/>
+                  <circle class="fp" cx="44" cy="96" r="1.5"/><circle class="fp" cx="136" cy="96" r="1.5"/>
+                  <circle class="fp" cx="56" cy="146" r="1.5"/><circle class="fp" cx="124" cy="146" r="1.5"/>
+                  <circle class="fp" cx="90" cy="152" r="1.6"/>
+                  <circle class="fp" cx="70" cy="60" r="1.5"/><circle class="fp" cx="110" cy="60" r="1.5"/>
+                </g>
+                <!-- 脸型标注 -->
+                <text class="glbl" x="140" y="24" fill="#d8b4fe" id="faceShapeLbl">脸型 · 待检测</text>
+              </svg>
+            </div>
+
+            <div class="sec-label">肤色诊断 · 冷暖判定</div>
+            <div class="card fade-up d1">
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="flex:1">
+                  <div style="font-size:16px;font-weight:750;margin-bottom:5px" id="diagTitle">等待采集</div>
+                  <div style="font-size:11.5px;color:var(--c-text-mute);line-height:1.65" id="diagDesc">
+                    尚未采集到有效肤色，请返回拍摄页打开摄像头后重新采集。
+                  </div>
+                </div>
+                <div id="diagSwatch" style="width:78px;height:78px;border-radius:50%;flex:none;
+                  background:radial-gradient(circle at 36% 32%, #f3e9e2, #d9c9c0 60%, #b9a79e);
+                  box-shadow:0 0 0 3px rgba(255,255,255,.1), 0 10px 26px -8px rgba(0,0,0,.6)"></div>
+              </div>
+              <!-- 三项实测指标 -->
+              <div class="diag-stats">
+                <div class="ds-item"><b id="diagCoolWarm">--</b><span>冷暖指数</span></div>
+                <div class="ds-item"><b id="diagLight">--</b><span>明度 L</span></div>
+                <div class="ds-item"><b id="diagSat">--</b><span>饱和度 S</span></div>
+                <div class="ds-item"><b id="diagHue">--</b><span>色相 H</span></div>
+              </div>
+              <div class="color-bar">
+                <div style="background:#f7ede4;color:#8a7568">最浅</div>
+                <div style="background:#eddfd4;color:#8a7568">浅</div>
+                <div style="background:#d9c6b8;color:#5c4a3e">中性</div>
+                <div style="background:#b89f8d;color:#fff">偏深</div>
+                <div style="background:#8c7565;color:#fff">深</div>
+                <div class="diag-mark" id="diagMark" style="display:none"></div>
+              </div>
+            </div>
+
+            <div class="sec-label">适配色卡 · 建议主色</div>
+            <div class="tone-swatches fade-up d2" id="toneSwatches">
+              <div class="swatch" style="background:linear-gradient(160deg,#93a7c9,#6b83ab)"><span>待采集</span></div>
+              <div class="swatch" style="background:linear-gradient(160deg,#b8a8d9,#8f7cbd)"><span>—</span></div>
+              <div class="swatch" style="background:linear-gradient(160deg,#e8e4ef,#c9c2d8)"><span>—</span></div>
+              <div class="swatch" style="background:linear-gradient(160deg,#8fb8c9,#5f93a8)"><span>—</span></div>
+            </div>
+
+            <div class="sec-label" id="beautySecLabel">穿搭 / 妆容方案</div>
+            <div class="outfit-cards fade-up d3">
+              <div class="outfit">
+                <div class="oi">👔</div>
+                <div class="ot">穿搭</div>
+                <div class="od" id="outfitDesc">完成采集后，将依据真实肤色生成配色方案。</div>
+              </div>
+              <div class="outfit">
+                <div class="oi" id="makeupIcon">💄</div>
+                <div class="ot" id="makeupTitle">妆容</div>
+                <div class="od" id="makeupDesc">完成采集后生成妆容色号建议。</div>
+              </div>
+            </div>
+
+            <div class="card fade-up d3" style="margin-top:14px">
+              <div class="card-title"><span class="bar"></span><span id="hairCardTitle">发型与配饰建议</span></div>
+              <div class="makeup-row" id="makeupRow">
+                <span class="chip info">等待采集</span>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:11px;margin-top:16px">
+              <button class="btn btn-soft" onclick="J.go('report-pose')" style="flex:1">返回体态报告</button>
+              <button class="btn btn-primary" onclick="J.go('health')" style="flex:1.3">查看健康方案 →</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= P5.5 健康方案（饮食/运动/作息） ================= -->
+        <section class="page" id="p-health">
+          <div class="ph-head">
+            <div class="back" onclick="J.go('report-face')">‹</div>
+            <div><div class="tt">健康调理方案</div><div class="st">饮食 · 运动 · 作息三维处方</div></div>
+          </div>
+          <div class="scroll">
+            <!-- 健康总分 -->
+            <div class="health-hero fade-up">
+              <div class="health-ring">
+                <svg viewBox="0 0 88 88">
+                  <defs>
+                    <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="var(--c-accent)"/>
+                      <stop offset="100%" stop-color="var(--c-accent-3)"/>
+                    </linearGradient>
+                  </defs>
+                  <circle class="hr-bg" cx="44" cy="44" r="38"/>
+                  <circle class="hr-fg" id="healthRing" cx="44" cy="44" r="38"
+                          stroke-dasharray="238.8" stroke-dashoffset="238.8"/>
+                </svg>
+                <div class="hr-num"><span id="healthScore">--</span><small>分</small></div>
+              </div>
+              <div class="health-tx">
+                <div class="ht-t">综合健康指数</div>
+                <div class="ht-d">综合肤色饱和度、体态偏移与采集环境加权得出。每完成一次采集自动更新。</div>
+              </div>
+            </div>
+
+            <div class="sec-label">环境与采集诊断</div>
+            <div class="adv-list fade-up d1" id="envList">
+              <div class="adv-empty">完成采集后生成</div>
+            </div>
+
+            <div class="sec-label">调理处方</div>
+            <div class="fade-up d2">
+              <div class="habit-tabs">
+                <div class="ht on" onclick="CamUI.tabHabit('diet',this)">🥗 饮食</div>
+                <div class="ht" onclick="CamUI.tabHabit('move',this)">🏃 运动</div>
+                <div class="ht" onclick="CamUI.tabHabit('life',this)">🌙 作息</div>
+              </div>
+              <div class="habit-pane on" id="pane-diet"><div class="adv-list" id="dietList"><div class="adv-empty">完成采集后生成</div></div></div>
+              <div class="habit-pane" id="pane-move"><div class="adv-list" id="moveList"><div class="adv-empty">完成采集后生成</div></div></div>
+              <div class="habit-pane" id="pane-life"><div class="adv-list" id="lifeList"><div class="adv-empty">完成采集后生成</div></div></div>
+            </div>
+
+            <div style="display:flex;gap:11px;margin-top:16px">
+              <button class="btn btn-soft" onclick="J.go('report-face')" style="flex:1">返回美学报告</button>
+              <button class="btn btn-primary" onclick="J.go('mirror')" style="flex:1.3">现场试穿调整 →</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= P6 镜面控制 ================= -->
+        <section class="page" id="p-mirror">
+          <div class="ph-head">
+            <div class="back" onclick="J.go('home')">‹</div>
+            <div><div class="tt">镜面控制</div><div class="st">电控旋转底座 · 已连接</div></div>
+          </div>
+          <div class="scroll">
+            <div class="mirror-stage fade-up">
+              <div class="mirror-3d">
+                <div class="mirror-panel" id="mirrorPanel">
+                  <div class="mirror-glass" id="mirrorGlass" style="transform:rotateY(40deg)"></div>
+                  <div class="mirror-base"></div>
+                </div>
+              </div>
+              <div class="mirror-deg-lb">当前镜面朝向</div>
+              <div class="mirror-deg"><span id="degNum">+40</span><small>°</small></div>
+            </div>
+
+            <div class="sec-label">快速角度</div>
+            <div class="angle-grid">
+              <button class="angle-btn" onclick="J.setAngle(-60, this)">
+                <div class="abd">↺</div><div class="abl">左侧面</div><div class="abv">-60°</div>
+              </button>
+              <button class="angle-btn" onclick="J.setAngle(0, this)">
+                <div class="abd">⊙</div><div class="abl">正面</div><div class="abv">0°</div>
+              </button>
+              <button class="angle-btn on" onclick="J.setAngle(40, this)">
+                <div class="abd">◐</div><div class="abl">斜前</div><div class="abv">+40°</div>
+              </button>
+              <button class="angle-btn" onclick="J.setAngle(90, this)">
+                <div class="abd">↻</div><div class="abl">右侧面</div><div class="abv">+90°</div>
+              </button>
+              <button class="angle-btn" onclick="J.setAngle(180, this)">
+                <div class="abd">⟲</div><div class="abl">背面</div><div class="abv">180°</div>
+              </button>
+              <button class="angle-btn" onclick="J.toast('已切换至连续旋转模式 ⟳')">
+                <div class="abd">≋</div><div class="abl">连续转</div><div class="abv">扫视</div>
+              </button>
+            </div>
+
+            <div class="sec-label">灯光与设备</div>
+            <div class="toggle-row">
+              <span class="tg-i">💡</span>
+              <div><div class="tg-t">环形补光灯</div><div class="tg-d">消除面部阴影，提升识别精度</div></div>
+              <div class="switch on" onclick="J.toggleSwitch(this,'环形补光灯')"></div>
+            </div>
+            <div class="toggle-row">
+              <span class="tg-i">📷</span>
+              <div><div class="tg-t">高清摄像头</div><div class="tg-d">1080P · 自动白平衡</div></div>
+              <div class="switch on" onclick="J.toggleSwitch(this,'高清摄像头')"></div>
+            </div>
+            <div class="toggle-row">
+              <span class="tg-i">🔒</span>
+              <div><div class="tg-t">拍摄锁定底座</div><div class="tg-d">拍摄时暂停移动，消除震动干扰</div></div>
+              <div class="switch on" onclick="J.toggleSwitch(this,'底座锁定')"></div>
+            </div>
+
+            <div class="sec-label">补光调节</div>
+            <div class="card">
+              <div class="slider-row">
+                <div class="slider-top"><span>亮度</span><span class="sv" id="vBright">92%</span></div>
+                <div class="slider-track" onclick="J.slide(event,'bright',this)">
+                  <div class="slider-fill" style="width:92%"></div>
+                </div>
+              </div>
+              <div class="slider-row warm-track">
+                <div class="slider-top"><span>色温</span><span class="sv" id="vWarm">冷白 5600K</span></div>
+                <div class="slider-track" onclick="J.slide(event,'warm',this)">
+                  <div class="slider-fill" style="width:62%"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sec-label">移动底座</div>
+            <div style="display:flex;gap:11px">
+              <button class="btn btn-soft" onclick="J.toast('镜体向玄关方向移动中…')" style="flex:1">← 移动</button>
+              <button class="btn btn-soft" onclick="J.toast('已停止移动 ■')" style="flex:1">停止</button>
+              <button class="btn btn-soft" onclick="J.toast('镜体向卧室方向移动中…')" style="flex:1">移动 →</button>
+            </div>
+            <div style="margin-top:14px">
+              <button class="btn btn-primary" onclick="J.go('capture')">重新检测 →</button>
+            </div>
+          </div>
+          <nav class="tabbar">
+            <button class="tab" onclick="J.go('home')"><span class="ti">⌂</span>首页</button>
+            <button class="tab" onclick="J.go('capture')"><span class="ti">◎</span>检测</button>
+            <button class="tab" onclick="J.go('report-pose')"><span class="ti">▤</span>报告</button>
+            <button class="tab on"><span class="ti">⚙</span>镜控</button>
+          </nav>
+        </section>
+
+      </div><!-- /pages -->
+
+      <div class="toast" id="toast"><span class="ti2">✓</span><span id="toastTxt"></span></div>
+
+      <!-- ============ AI 语音助手 FAB ============ -->
+      <button class="voice-fab" id="voiceFab" onclick="VoiceUI.togglePanel()" title="AI 语音助手">
+        <span class="ring"></span><span class="ring"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+        </svg>
+      </button>
+
+      <!-- ============ AI 语音助手浮层 ============ -->
+      <div class="voice-panel" id="voicePanel">
+        <div class="vp-head">
+          <div class="vp-orb"><i>◈</i></div>
+          <div class="vp-meta">
+            <div class="vp-name">
+              镜界语音助手
+              <span class="live" id="vpLive" style="display:none"><b></b>播报中</span>
+            </div>
+            <div class="vp-sub" id="vpSub">在线 · 随时为您播报检测结论</div>
+          </div>
+          <button class="vp-btn icon" onclick="VoiceUI.closePanel()" title="收起">✕</button>
+        </div>
+
+        <div class="wave" id="vWave">
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="vp-caption placeholder" id="vpCaption">
+          点击下方按钮，或开始一次检测，我将为您播报体态与美学报告结论。
+        </div>
+
+        <div class="vp-ctrl">
+          <button class="vp-btn primary" id="vpPlay" onclick="VoiceUI.replay()">
+            <span>▶</span><span id="vpPlayTxt">播报报告</span>
+          </button>
+          <button class="vp-btn icon" id="vpStop" onclick="VoiceUI.stop()" title="停止">■</button>
+          <button class="vp-btn icon" id="vpMute" onclick="VoiceUI.toggleMute()" title="静音">🔊</button>
+          <div class="vp-spacer"></div>
+          <span class="vp-rate" id="vpRate">语速 1.0×</span>
+        </div>
+      </div>
+
+    </div><!-- /screen -->
+  </div><!-- /phone -->
+  </div><!-- /phone-wrap -->
+
+</div><!-- /layout -->
+
+<div class="foot-note">镜界 JINGJIE · AI 智美形象管家 · 高保真交互原型 v1.0</div>
+
+<script src="camera.js"></script>
+<script src="advisor.js"></script>
+<script src="voice.js"></script>
+<script src="voice-ui.js"></script>
+<script src="cam-ui.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
