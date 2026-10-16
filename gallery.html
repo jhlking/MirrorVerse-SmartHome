@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>镜界 JINGJIE · 演示原型总览</title>
+<style>
+  :root{
+    --bg:#05070d; --surf:rgba(20,27,42,.7); --bd:rgba(150,200,255,.14);
+    --txt:#eaf2ff; --dim:#93a6c4; --mute:#5d6f8c;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",system-ui,sans-serif;
+    background:
+      radial-gradient(1100px 700px at 12% -8%, rgba(79,209,197,.14), transparent 60%),
+      radial-gradient(900px 620px at 92% 8%, rgba(159,122,234,.15), transparent 62%),
+      linear-gradient(170deg,#05070d,#080d17 52%,#05070d);
+    color:var(--txt); min-height:100vh; padding:48px 40px 80px;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{max-width:1560px;margin:0 auto 46px}
+  .tag{display:inline-flex;align-items:center;gap:10px;padding:7px 16px 7px 8px;
+    border:1px solid var(--bd);border-radius:100px;background:var(--surf);
+    font-size:12px;letter-spacing:.16em;color:var(--dim);margin-bottom:22px}
+  .tag i{width:20px;height:20px;border-radius:50%;
+    background:linear-gradient(135deg,#4fd1c5,#63b3ed 45%,#9f7aea);
+    box-shadow:0 0 30px -4px rgba(83,200,220,.8)}
+  h1{font-size:46px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin-bottom:8px}
+  h1 em{font-style:normal;background:linear-gradient(135deg,#4fd1c5,#63b3ed 45%,#9f7aea);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--dim);font-size:15.5px;line-height:1.7;max-width:880px}
+  .sub b{color:#7ee8dd}
+  .meta{display:flex;gap:26px;margin-top:22px;flex-wrap:wrap}
+  .meta div{font-size:12.5px;color:var(--mute)}
+  .meta b{display:block;font-size:19px;color:var(--txt);font-weight:700;margin-bottom:2px;
+    font-family:ui-monospace,monospace}
+  .sec{max-width:1560px;margin:0 auto 22px;display:flex;align-items:center;gap:13px}
+  .sec h2{font-size:20px;font-weight:750;letter-spacing:-.01em;white-space:nowrap}
+  .sec .ln{flex:1;height:1px;background:linear-gradient(90deg,rgba(150,200,255,.3),transparent)}
+  .sec .bdg{font-size:11px;font-weight:700;padding:4px 11px;border-radius:100px;
+    background:linear-gradient(135deg,rgba(126,232,221,.2),rgba(159,122,234,.16));
+    border:1px solid rgba(126,232,221,.4);color:#7ee8dd;letter-spacing:.05em}
+  .grid{max-width:1560px;margin:0 auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:30px}
+  .grid.voice{margin-bottom:56px}
+  .item{background:linear-gradient(150deg,rgba(32,42,62,.6),rgba(14,20,33,.42));
+    border:1px solid var(--bd);border-radius:22px;padding:18px;
+    transition:all .45s cubic-bezier(.22,1,.36,1)}
+  .item:hover{transform:translateY(-5px);border-color:rgba(170,220,255,.34);
+    box-shadow:0 26px 60px -24px rgba(83,200,220,.6)}
+  .item.hot{border-color:rgba(126,232,221,.42);
+    box-shadow:0 0 0 1px rgba(126,232,221,.12), 0 26px 60px -26px rgba(83,200,220,.7)}
+  .shot{border-radius:14px;overflow:hidden;background:#0a0f1a;border:1px solid rgba(255,255,255,.07)}
+  .shot img{display:block;width:100%;height:auto}
+  .cap{display:flex;align-items:center;gap:10px;margin-top:15px}
+  .num{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;
+    font-size:12px;font-weight:800;background:linear-gradient(135deg,#7ee8dd,#5aa9f0);color:#04141b;flex:none}
+  .item.hot .num{background:linear-gradient(135deg,#c084fc,#7ee8dd)}
+  .cap .t{font-size:14.5px;font-weight:700}
+  .cap .d{font-size:11px;color:var(--mute);margin-top:2px}
+  footer{max-width:1560px;margin:56px auto 0;text-align:center;color:var(--mute);
+    font-size:11.5px;letter-spacing:.06em;line-height:1.9}
+</style>
+</head>
+<body>
+<header>
+  <div class="tag"><i></i>AI 智美形象管家 · 原型演示</div>
+  <h1>镜界 <em>JINGJIE</em></h1>
+  <p class="sub">一面会思考的落地镜。复用一次全身人像采集，同步完成 AI 体态风险筛查与面部美学诊断，
+  30 秒输出矫正、穿搭、妆容、饮食全套个性化方案。<br>
+  <b>本次升级：① 真实调用摄像头 —— 打开即实时人脸跟踪，按下快门对画面做像素级肤色分析，
+  报告中的数据全部来自当次实拍；② 男生 / 女生双主题 —— 一键切换整套配色（女生转樱花粉），
+  并同步改写穿搭与理容 / 妆容建议文案。</b></p>
+  <div class="meta">
+    <div><b>2</b>性别主题</div>
+    <div><b>7</b>核心页面</div>
+    <div><b>实时</b>摄像头人脸跟踪</div>
+    <div><b>YCbCr</b>肤色像素分析</div>
+    <div><b>20k+</b>单帧采样像素</div>
+    <div><b>5</b>语音文稿</div>
+    <div><b>0</b>外部依赖</div>
+  </div>
+</header>
+
+<div class="sec">
+  <h2>男生 / 女生 双主题</h2>
+  <span class="bdg">本次新增</span>
+  <div class="ln"></div>
+</div>
+<div class="grid voice">
+  <div class="item hot"><div class="shot"><img src="shots/29_male_full_ui.webp" alt="男生模式"></div>
+    <div class="cap"><div class="num">Ⅰ</div><div><div class="t">男生模式 · 青金科技感</div><div class="d">默认主题 · 报告输出理容 / 发型 / 正装配色建议</div></div></div></div>
+
+  <div class="item hot"><div class="shot"><img src="shots/28_female_full_ui.webp" alt="女生模式"></div>
+    <div class="cap"><div class="num">Ⅱ</div><div><div class="t">女生模式 · 樱花玫瑰粉</div><div class="d">一键换肤 · 背景光晕 / 手机边框 / 按钮全部转粉</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/24_female_capture.webp" alt="女生拍摄页"></div>
+    <div class="cap"><div class="num">Ⅲ</div><div><div class="t">女生模式 · 实拍检测</div><div class="d">粉色主题下摄像头与人脸跟踪照常工作</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/23_female_home.webp" alt="女生首页"></div>
+    <div class="cap"><div class="num">Ⅳ</div><div><div class="t">女生首页 · 粉色主题</div><div class="d">头像转「她」· 快捷卡片与主按钮全部粉调</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/25_female_face_report.webp" alt="女生美学报告"></div>
+    <div class="cap"><div class="num">Ⅴ</div><div><div class="t">女生报告 · 妆容方案</div><div class="d">标题为「妆容」，输出唇色 / 眼影 / 发色色号</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/21_male_face_report.webp" alt="男生美学报告"></div>
+    <div class="cap"><div class="num">Ⅵ</div><div><div class="t">男生报告 · 理容方案</div><div class="d">同一份数据，标题切为「理容」，改输出护肤 / 胡须 / 眉形</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/26_female_health.webp" alt="女生健康方案"></div>
+    <div class="cap"><div class="num">Ⅶ</div><div><div class="t">女生模式 · 健康方案</div><div class="d">健康分 / 饮食 / 运动 / 作息在粉调下完整渲染</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/22_male_health.webp" alt="男生健康方案"></div>
+    <div class="cap"><div class="num">Ⅷ</div><div><div class="t">男生模式 · 健康方案</div><div class="d">同一套健康引擎，青金主题下呈现</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/27_female_mirror.webp" alt="女生镜面控制"></div>
+    <div class="cap"><div class="num">Ⅸ</div><div><div class="t">女生模式 · 镜面控制</div><div class="d">3D 镜面与角度控制跟随粉色主题</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/20_male_home.webp" alt="男生首页"></div>
+    <div class="cap"><div class="num">Ⅹ</div><div><div class="t">男生首页 · 青金主题</div><div class="d">默认模式 · 对照女生版落差异常明显</div></div></div></div>
+</div>
+
+<div class="sec">
+  <h2>真实摄像头采集</h2>
+  <span class="bdg">本次新增</span>
+  <div class="ln"></div>
+</div>
+<div class="grid voice">
+  <div class="item hot"><div class="shot"><img src="shots/02_capture_idle.webp" alt="待开启摄像头"></div>
+    <div class="cap"><div class="num">1</div><div><div class="t">点击开启摄像头</div><div class="d">首次访问需用户手势授权 · 说明画面仅本机处理</div></div></div></div>
+
+  <div class="item hot"><div class="shot"><img src="shots/02b_capture_start.webp" alt="授权入口状态"></div>
+    <div class="cap"><div class="num">2</div><div><div class="t">手势授权引导</div><div class="d">未授权时不自动弹窗 · 显式按钮触发 getUserMedia</div></div></div></div>
+
+  <div class="item hot"><div class="shot"><img src="shots/03_capture_live.webp" alt="实时预览"></div>
+    <div class="cap"><div class="num">3</div><div><div class="t">实时预览 + 人脸跟踪</div><div class="d">青色检测框实时跟随 · 右上角显示真实亮度 / 清晰度 / 人脸状态</div></div></div></div>
+
+  <div class="item hot"><div class="shot"><img src="shots/06_report_face.webp" alt="实拍分析结果"></div>
+    <div class="cap"><div class="num">4</div><div><div class="t">实拍数据驱动报告</div><div class="d">冷暖指数 / 明度 / 饱和度 / 色相 四项指标均为当次实拍结果</div></div></div></div>
+
+  <div class="item hot"><div class="shot"><img src="shots/07_report_face_colors.webp" alt="动态色卡"></div>
+    <div class="cap"><div class="num">5</div><div><div class="t">按实测肤色匹配色卡</div><div class="d">明度刻度白色指针落在实测位置 · 色卡随冷暖调动态生成</div></div></div></div>
+</div>
+
+<div class="sec">
+  <h2>健康调理方案</h2>
+  <span class="bdg">本次新增</span>
+  <div class="ln"></div>
+</div>
+<div class="grid voice">
+  <div class="item hot"><div class="shot"><img src="shots/08_health_diet.webp" alt="健康总分"></div>
+    <div class="cap"><div class="num">6</div><div><div class="t">综合健康指数</div><div class="d">分数环动画 · 环境与采集诊断（实测亮度偏低会给出补光建议）</div></div></div></div>
+
+  <div class="item hot"><div class="shot"><img src="shots/08b_health_diet_list.webp" alt="饮食处方"></div>
+    <div class="cap"><div class="num">7</div><div><div class="t">饮食 / 运动 / 作息 三段处方</div><div class="d">按体态问题匹配：维D+钙 · Omega-3 · 控糖控咖啡因</div></div></div></div>
+  <div class="item"><div class="shot"><img src="shots/10_health_move.webp" alt="运动处方"></div>
+    <div class="cap"><div class="num">8</div><div><div class="t">运动处方</div><div class="d">收下巴 / 胸椎伸展 / 肩胛稳定，含组次与要点</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/12_mirror.webp" alt="镜面控制"></div>
+    <div class="cap"><div class="num">9</div><div><div class="t">镜面控制</div><div class="d">3D 镜面 · 六档角度 · 灯光与设备开关</div></div></div></div>
+</div>
+
+<div class="sec">
+  <h2>AI 语音播报</h2>
+  <div class="ln"></div>
+</div>
+<div class="grid voice">
+  <div class="item hot"><div class="shot"><img src="shots/11_voice_speaking.webp" alt="语音播报中"></div>
+    <div class="cap"><div class="num">10</div><div><div class="t">语音播报中</div><div class="d">声波可视化 · 实时字幕 · 关键词高亮</div></div></div></div>
+
+  <div class="item hot"><div class="shot"><img src="shots/12_voice_caption_full.webp" alt="完整字幕"></div>
+    <div class="cap"><div class="num">11</div><div><div class="t">完整字幕呈现</div><div class="d">报告全文 · 关键数值标色高亮</div></div></div></div>
+
+  <div class="item hot"><div class="shot"><img src="shots/13_report_with_voice.webp" alt="报告页语音"></div>
+    <div class="cap"><div class="num">12</div><div><div class="t">报告页自动播报</div><div class="d">进入体态报告即自动朗读结论</div></div></div></div>
+
+  <div class="item hot"><div class="shot"><img src="shots/14_face_with_voice.webp" alt="美学语音"></div>
+    <div class="cap"><div class="num">13</div><div><div class="t">美学报告播报</div><div class="d">自动切换文稿 · 播报穿搭妆容方案</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/09_home_voice_fab.webp" alt="语音入口"></div>
+    <div class="cap"><div class="num">14</div><div><div class="t">语音助手入口</div><div class="d">手机内浮动麦克风按钮 · 播报时脉冲</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/10_voice_idle.webp" alt="语音待机"></div>
+    <div class="cap"><div class="num">15</div><div><div class="t">语音助手待机</div><div class="d">播报 / 停止 / 静音 控制条</div></div></div></div>
+</div>
+
+<div class="sec">
+  <h2>核心页面流程</h2>
+  <div class="ln"></div>
+</div>
+<div class="grid">
+  <div class="item"><div class="shot"><img src="shots/01_home.webp" alt="首页"></div>
+    <div class="cap"><div class="num">A</div><div><div class="t">首页 / 落地页</div><div class="d">设备状态 · 快捷入口 · 评分趋势</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/04_analyze.webp" alt="分析中"></div>
+    <div class="cap"><div class="num">B</div><div><div class="t">AI 分析中</div><div class="d">进度环 · 5 步流水线实时状态</div></div></div></div>
+
+  <div class="item"><div class="shot"><img src="shots/05_report_pose.webp" alt="体态报告"></div>
+    <div class="cap"><div class="num">C</div><div><div class="t">体态健康报告</div><div class="d">评分环 · 骨架可视化 · 偏差明细</div></div></div></div>
+</div>
+
+<footer>镜界 JINGJIE · AI 智美形象管家 · 高保真交互原型 v4.0（真实摄像头采集 + 像素级分析 + 健康方案 + 男生/女生双主题）<br>
+交互提示：左侧「使用模式」切换男生 / 女生 · 手机屏内右上角胶囊同样可切 · 进入拍摄页点击开启摄像头 · 右下角麦克风呼出语音助手 · 键盘 1-7 跳页 / G 切性别 / V 开合面板 / R 重播<br>
+注：摄像头需通过 http(s) 访问（localhost 属安全上下文）。截图使用合成人像素材驱动，分析与渲染链路为真实运行。性别偏好会写入 localStorage 并在刷新后保持。</footer>
+</body>
+</html>
