@@ -11,21 +11,23 @@
 
 <br>
 
-[![Zero Dependencies](https://img.shields.io/badge/依赖-零外部依赖-3fb950?style=flat-square)](#技术栈)
-[![Vanilla JS](https://img.shields.io/badge/原生-HTML%20%2F%20CSS%20%2F%20JS-f7df1e?style=flat-square)](#技术栈)
-[![No Build](https://img.shields.io/badge/构建-无需构建-blue?style=flat-square)](#运行方式)
-[![Version](https://img.shields.io/badge/版本-v4.0-ff8fb8?style=flat-square)](#版本记录)
+[![Python Backend](https://img.shields.io/badge/后端-Python%20标准库-3776ab?style=flat-square)](#后端服务)
+[![SQLite](https://img.shields.io/badge/存储-SQLite-003b57?style=flat-square)](#后端服务)
+[![Zero Dependencies](https://img.shields.io/badge/依赖-零第三方依赖-3fb950?style=flat-square)](#技术栈)
+[![Vanilla JS](https://img.shields.io/badge/前端-原生%20HTML%20%2F%20CSS%20%2F%20JS-f7df1e?style=flat-square)](#技术栈)
+[![Version](https://img.shields.io/badge/版本-v6.0-ff8fb8?style=flat-square)](#版本记录)
 [![License](https://img.shields.io/badge/许可-MIT-7ee8dd?style=flat-square)](#许可)
 
 <br>
 
-<img src="preview_hero.webp" alt="镜界 JINGJIE 界面预览：首页 / 实时采集 / 体态报告 / 女生主题" width="88%">
+<img src="preview_hero.webp" alt="镜界 JINGJIE 界面预览：后端在线首页 / 实时采集 / 服务端方案报告 / 女生主题" width="88%">
 
-<sub>首页 · 实时人脸跟踪采集 · 体态健康报告 · 女生粉色主题</sub>
+<sub>后端在线首页（数据源胶囊） · 实时人脸跟踪采集 · 服务端方案报告 · 女生粉色主题</sub>
 
 <br>
 
 **[🚀 快速开始](#-快速开始)** &nbsp;·&nbsp;
+**[🖥️ 后端服务](#-后端服务)** &nbsp;·&nbsp;
 **[📸 截图总览](gallery.html)** &nbsp;·&nbsp;
 **[🧠 算法细节](#-核心算法)** &nbsp;·&nbsp;
 **[🎨 双主题](#-男生--女生双主题)**
@@ -38,36 +40,54 @@
 
 镜界是一整套「智能落地镜」产品的高保真**软件原型**。硬件侧为电控旋转底座 + 环形补光 + 高清摄像头 + 实木收纳镜背；本仓库实现的是其中的**软件交互与 AI 分析链路**，可直接在浏览器运行。
 
-它**不是 PPT 里的静态图**，而是一个能跑起来的应用：
+它**不是 PPT 里的静态图**，而是一个能跑起来的**全栈应用**：
 
 - 🎥 **真的打开摄像头**，用 `getUserMedia` 实时采集
 - 🧮 **真的做像素级分析** —— YCbCr 肤色检测、人脸包围盒投影、拉普拉斯清晰度、冷暖色调判定，全部由数学计算得出，**同一用户在不同光照下结果不同**
+- 🐍 **真的有后端** —— Python 标准库实现的 REST API 服务，SQLite 持久化检测历史与用户档案
 - 🗣️ **真的会说话** —— Web Speech API 中文语音播报 + 实时打字机字幕
 - 🎨 **一键换肤** —— 男生/女生双主题，零重载切换整套配色与文案
-- 📦 **零外部依赖** —— 无框架、无 CDN、无构建步骤，8 个源文件即全部
+- 📦 **零第三方依赖** —— 前端无框架无构建，后端只用 Python 标准库，**整条链路不装一个 pip 包**
 
 ---
 
 ## 🚀 快速开始
 
-摄像头 API 要求**安全上下文**（`https://` 或 `localhost`），`file://` 下无法授权。因此推荐用 HTTP 打开：
+### 方式一：带后端完整运行（推荐）
+
+只需本机装有 **Python 3.8+**（无需 pip 安装任何包）：
 
 ```bash
 git clone https://github.com/jhlking/MirrorVerse-SmartHome.git
 cd MirrorVerse-SmartHome
-python -m http.server 8899
+python server.py
 ```
 
-然后浏览器访问 **http://127.0.0.1:8899/index.html**，点击「开启摄像头」即可体验完整分析链路。
+浏览器会自动打开 **http://127.0.0.1:8899/**。这一条命令同时做了三件事：
+
+1. 启动 Python 后端（REST API + SQLite）
+2. 托管前端静态资源（同源，摄像头可直接授权）
+3. 首次运行自动写入 3 条演示数据
+
+> 常用参数：`--port 9000` 换端口 · `--host 0.0.0.0` 局域网可访问 · `--reset` 清库重来 · `--no-browser` 不自动开浏览器
+
+### 方式二：纯前端静态运行
+
+不需要后端也能完整体验 —— 前端检测不到 API 会**自动降级**为本地规则引擎 + `localStorage`，功能一个不少，仅在首页标注「本地模式」。
+
+```bash
+python -m http.server 8899
+# 或任意静态服务器：npx serve / php -S / VS Code Live Server
+```
 
 <details>
 <summary><b>其他打开方式</b></summary>
 
 | 方式 | 说明 |
 |---|---|
-| 双击 `index.html` | 直接 `file://` 打开，**摄像头不可用**，自动降级为剪影演示模式，其余页面正常 |
+| 双击 `index.html` | 直接 `file://` 打开，**摄像头不可用**，自动降级为剪影演示模式；后端若在运行仍可跨源连接 |
 | 双击 `gallery.html` | 28 张演示截图总览，无需服务 |
-| 任意静态服务器 | `npx serve` / `php -S` / VS Code Live Server 均可 |
+| `python server.py` | **推荐**：前后端同源，摄像头 + 数据库全可用 |
 
 </details>
 
@@ -242,22 +262,87 @@ rbScore  = (平均R-B - 38) × 0.9        典型中性肤色 R-B ≈ 38
 
 ---
 
+## 🖥️ 后端服务
+
+镜界的后端**只用 Python 标准库**写成，不依赖 Flask / FastAPI / 任何 pip 包 —— `http.server` 做 HTTP、`sqlite3` 做持久化、`json` 做序列化。目的是把「前端演示」补齐成一条**真正的全栈链路**：分析结果可落库、历史可回看、趋势可累计、档案可跨会话留存。
+
+### 架构分层
+
+```
+server.py                    ← 入口：参数解析 / 启动 / 优雅退出
+server/
+├── config.py                配置集中（路径 / 端口 / CORS / 限额，支持环境变量覆盖）
+├── logger.py                统一日志（ANSI 彩色、tty 感知、幂等初始化）
+├── db.py                    数据层：sqlite3 + WAL + 每线程连接 + schema 版本迁移
+├── httpd.py                 微型框架：Router 装饰器路由 / Request / Response / CORS / 静态托管
+├── routes/api.py            API 路由定义（薄层，只做参数校验与转发）
+└── services/
+    ├── advisor.py           建议规则引擎（服务端口径，与前端 advisor.js 契约一致）
+    └── reports.py           业务编排：生成方案 / 入库 / 查询 / 趋势聚合
+```
+
+**设计原则**：路由层薄、业务层厚、数据层独立。`Router` 用装饰器注册，路径参数 `:id` 自动转正则捕获；`HttpError(status, message, code)` 统一异常 → 统一 JSON 错误信封；SQLite 连接不跨线程（`threading.local`），开启 WAL 提升并发读。
+
+### API 一览
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| `GET` | `/api/health` | 健康检查（前端据此判定在线/离线，决定数据源） |
+| `GET` | `/api/reports` | 报告列表，支持 `limit` / `offset` / `gender` 筛选 |
+| `POST` | `/api/reports` | 提交分析 → 服务端生成方案并**入库** |
+| `GET` | `/api/reports/:id` | 单份报告详情（含完整 `payload` 与 `plan`） |
+| `GET` | `/api/trend` | 评分趋势序列（供首页折线图，按 `gender` 过滤） |
+| `GET` | `/api/stats` | 汇总统计（总次数 / 平均分 / 最近分） |
+| `POST` | `/api/analyze` | 仅生成方案、**不入库**（试算 / 预演） |
+| `GET` | `/api/profile` | 用户档案（昵称 / 性别 / 目标） |
+| `PUT` | `/api/profile` | 更新档案 |
+
+统一响应信封：成功返回业务对象，失败返回 `{"error":{"code","message"},"status":404}`。
+
+```bash
+# 一条命令体验
+curl http://127.0.0.1:8899/api/health
+curl "http://127.0.0.1:8899/api/reports?limit=5"
+curl "http://127.0.0.1:8899/api/trend?limit=6"
+```
+
+### 优雅降级（前后端解耦的关键）
+
+前端 `api.js` 启动时探测一次 `/api/health`，据此走两条路 —— **后端在，用服务端数据；后端不在，功能不降级**：
+
+| | 后端在线 | 后端离线 |
+|---|---|---|
+| 建议方案 | 服务端规则引擎生成 | 前端 `advisor.js` 本地生成 |
+| 历史 / 趋势 | 来自 SQLite | 内置演示序列 |
+| 检测次数 | 真实库内条数 | 演示值 |
+| 档案 / 性别 | 服务端持久化，跨会话恢复 | `localStorage` |
+| 首页标识 | 🟢 `服务端 · SQLite` | 🟡 `本地模式` |
+
+在线时页面上会挂一枚**呼吸灯胶囊**标明数据源，趋势卡与检测计数也会打上「服务端」小标 —— 后端真的接进来了，肉眼可见。
+
+---
+
 ## 📁 文件结构
 
 ```
 MirrorVerse-SmartHome/
+├── server.py            后端入口：启动 HTTP 服务 + 初始化 SQLite（零 pip 依赖）
+├── server/              后端分层实现（config / logger / db / httpd / routes / services）
+│   └── services/        advisor.py（建议引擎）· reports.py（业务编排）
 ├── index.html           单页应用骨架，7 个「手机屏」页面
 ├── style.css            设计系统（玻璃拟态 / 极光渐变 / CSS 变量令牌 + 双主题）
+├── api.js               后端 API 客户端：健康探测 + 优雅降级 + 数据源胶囊
 ├── app.js               页面路由 J.go()、步骤动画、镜面控制、性别主题 J.setGender()
 ├── camera.js            摄像头采集 + 像素级图像分析（零依赖）
-├── advisor.js           建议规则引擎：肤色→配色 / 体态→饮食运动作息 / 性别分流
+├── advisor.js           前端建议规则引擎（离线兜底，与服务端口径一致）
 ├── cam-ui.js            摄像头 UI 桥接：实时预览、人脸框、快门、报告渲染
 ├── voice.js             Web Speech API 中文语音播报
 ├── voice-ui.js          语音浮层：声波、打字机字幕、关键词高亮
 ├── fx.js                高级交互层：水波纹 / 光斑跟随 / 滚动渐显 / 数字滚动 / 视差
 ├── gallery.html         演示截图总览页
 ├── preview_hero.webp    本 README 顶部横幅
-├── shots/               28 张演示截图（含男生 / 女生两套，WebP 无损压缩）
+├── shots/               演示截图（含男生 / 女生两套，WebP 无损压缩）
+├── data/                SQLite 数据库（运行时生成，已 gitignore）
 ├── fakeface.y4m         合成人像视频素材（供无头浏览器假摄像头测试）
 └── .gitignore
 ```
@@ -267,25 +352,37 @@ MirrorVerse-SmartHome/
 | | |
 |---|---|
 | **前端** | 原生 HTML5 / CSS3 / ES6+，**无框架、无构建、无 CDN** |
+| **后端** | Python 3.8+ **标准库**：`http.server` · `sqlite3` · `json` · `argparse` · `threading` |
+| **存储** | SQLite（WAL 模式）+ 前端 `localStorage` 双通道 |
 | **图形** | Canvas 2D 像素分析、SVG 矢量图标、CSS 变量驱动的主题系统 |
-| **API** | `getUserMedia` · `MediaStream` · `Canvas.getImageData` · `SpeechSynthesis` · `localStorage` |
+| **API** | `getUserMedia` · `Canvas.getImageData` · `SpeechSynthesis` · `fetch` · `localStorage` |
 | **测试** | Edge 无头模式 + Chrome DevTools Protocol（Python 标准库自建 WebSocket 客户端） |
 
 ---
 
 ## 🧪 工程验证
 
-原型用 **Edge 无头模式 + CDP** 做了数值化验收（不依赖人眼看图）：
+原型与后端均用 **Edge 无头模式 + CDP** 做了数值化验收（不依赖人眼看图），三套测试脚本**全绿**：
 
-- 摄像头全链路：开摄像头 → 实时跟踪 → 快门 → 报告，**23/23 通过**
-- 性别双主题：配色分离度、控件对齐、文案分流，**30/30 通过**
-- 综合校验：页面渲染、JS 报错、资源完整性，**14/14 通过**
+| 测试套件 | 覆盖 | 结果 |
+|---|---|---|
+| **后端 API 端到端** | 9 个接口 + 参数校验 + 错误码 + CORS + 静态托管 + 目录穿越防护 | **68 / 68** ✅ |
+| **前端 × 后端集成** | 在线数据源、趋势/计数来自服务端、真实降级（死端口）、跨源 file:// | **20 / 20** ✅ |
+| **采集 → 服务端方案 → 入库** | 注入分析 → 服务端 plan → 报告渲染 → SQLite +1 | **10 / 10** ✅ |
+
+关键断言（全部为真实数值，非肉眼判断）：
+
+- 后端在线时，首页趋势图**点数 == `/api/trend` 返回点数**，检测次数**== 库内真实条数**
+- 走完采集流程后，**库内记录 +1**，报告页穿搭/妆容文案由**服务端 plan** 驱动（非占位文案）
+- 后端不可达时，胶囊切「本地模式」、趋势图回落内置 6 点、**JS 报错 0**
+- 目录穿越（`/../server.py`、`/%2e%2e/`、`/..%2f`）全部 **403 拦截**
+- 方法不匹配 **405**、资源不存在 **404**、非法参数 **400 / 422**、非法 `gender` **400**
 
 实测数据（合成人像）：肤色 `RGB(196,153,125)`、冷暖 `+13`（暖调）、脸型长形脸、
 单帧有效肤色像素 `20,640`、置信度 `96%`、**JS 报错 0**。
 
 <details>
-<summary><b>CDP 无头测试的 6 个坑（踩坑记录）</b></summary>
+<summary><b>CDP 无头测试的踩坑记录</b></summary>
 
 1. Edge 进程必须 `subprocess.Popen(..., creationflags=DETACHED_PROCESS)` 才能存活
 2. 必须显式 `Page.navigate`，否则 target 停在 `about:blank`
@@ -293,6 +390,7 @@ MirrorVerse-SmartHome/
 4. **`const CamUI = ...` 不会挂到 `window`**，跨脚本引用要用 `typeof CamUI !== 'undefined'`
 5. `Target.activateTarget` + `Page.bringToFront` 避免后台标签页节流
 6. `Page.captureScreenshot` 用 CDP 而非 `--screenshot`（后者在本机静默失败）
+7. **本机 `http_proxy` 环境变量会拦截 `127.0.0.1`** —— Python 测试前必须清空代理环境变量
 
 </details>
 
@@ -305,6 +403,7 @@ MirrorVerse-SmartHome/
 - 脸型由面部框长宽比近似推断，非真实 68 点轮廓拟合
 - 健康建议为通用科普性内容，**不构成医疗建议**
 - 性别主题只改变配色与建议措辞，不改变分析算法
+- 后端为**单机演示级**：无鉴权、CORS 放开、SQLite 单文件，不适合直接公网部署
 
 ---
 
@@ -312,6 +411,7 @@ MirrorVerse-SmartHome/
 
 | 版本 | 内容 |
 |---|---|
+| **v6.0** | 全栈化：Python 标准库后端（REST API + SQLite）、前后端契约对齐、优雅降级 + 数据源可视化 |
 | **v5.0** | 高级质感层：统一动效基调、自绘 SVG 数据可视化、交互反馈与微动效、玻璃/噪点质感精修 |
 | **v4.0** | 男生 / 女生双主题（粉色女生模式）、建议文案性别分流、`G` 快捷键 |
 | **v3.0** | 真实摄像头采集 + 像素级图像分析 + 健康调理方案页 |
