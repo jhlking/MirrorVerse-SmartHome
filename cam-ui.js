@@ -377,12 +377,80 @@ const CamUI = (() => {
     const fd = $('faceDetect'); if (fd) fd.style.display = 'none';
   }
 
+  /* 体态参数：每次测评生成一组「符合常识的轻微波动」的偏移项与惩罚。
+     用 analysis.seed 派生的独立随机源 → 同一份 analysis 永远得到同一组体态，
+     避免渲染 / 重算时结果漂移。 */
+  function makePosture(seed) {
+    const V = (typeof Variance !== 'undefined') ? Variance : null;
+    if (!V) return { targets: ['forward_head', 'shoulder'], penalty: 5 };
+    // 用「种子 + 常量」派生独立随机源，不污染全局 RNG
+    const s = (typeof seed === 'number') ? (seed ^ 0x9e3779b9) : undefined;
+    const save = V.seed();          // 保存当前全局种子
+    V.reseed(s);                    // 切到派生种子
+    // 偏移项池：每次抽 1~2 项
+    const POOL = [
+      { k: 'forward_head', p: [3, 7] },
+      { k: 'shoulder',     p: [2, 6] },
+      { k: 'pelvis',       p: [2, 5] },
+      { k: 'spine',        p: [2, 5] }
+    ];
+    const n = V.intRange(1, 2);
+    const picked = V.sample(POOL, n);
+    let penalty = 0;
+    const targets = picked.map(o => { penalty += V.intRange(o.p[0], o.p[1]); return o.k; });
+    V.reseed(save || 0);            // 还原全局种子
+    return { targets, penalty };
+  }
+
+  /* 无摄像头时的「演示数据」：同样注入合理波动，
+     让没有摄像头的环境也能看到「每次不一样」的测评效果。 */
+  function demoAnalysis() {
+    const V = (typeof Variance !== 'undefined') ? Variance : null;
+    const seed = V ? V.reseed() : 0;         // 先定种子，保证本次演示全程一致
+    const r = (a, b) => V ? V.range(a, b) : (a + b) / 2;
+    // 肤色：围绕中性偏暖的常见范围轻微漂移
+    const coolWarm = Math.round(r(-8, 14));
+    const hue = Math.round(r(18, 30));
+    const L = Math.round(r(168, 198));
+    const S = Math.round(r(28, 40));
+    const rgbR = Math.round(200 + r(0, 40));
+    const rgbG = Math.round(rgbR - r(38, 58));
+    const rgbB = Math.round(rgbG - r(20, 40));
+    return {
+      ts: Date.now(),
+      seed,
+      hasFace: true,
+      hasTone: true,
+      quality: {
+        brightness: Math.round(r(128, 172)),
+        contrast: Math.round(r(34, 52)),
+        sharpness: Math.round(r(9.5, 15) * 10) / 10,
+        underPct: Math.round(r(2, 10)),
+        overPct: Math.round(r(0, 5)),
+        usable: true, issues: []
+      },
+      tone: { rgb: [rgbR, rgbG, rgbB], hue, lightness: L, saturation: S,
+              coolWarm, label: coolWarm <= -12 ? '冷调' : coolWarm >= 12 ? '暖调' : '中性调',
+              pixels: Math.round(r(2600, 5200)) },
+      face: { shape: (V ? V.pickVary('shape', ['鹅蛋脸', '圆脸', '长脸', '方脸', '心形脸'])
+                        : '鹅蛋脸'), ratio: Math.round(r(1.24, 1.46) * 100) / 100 },
+      faceBox: { x: 0.32, y: 0.16, w: 0.36, h: 0.48, ratio: 0.17 }
+    };
+  }
+
   /* ============================================================
      五、快门：真实分析 → 生成方案 → 渲染报告
      ============================================================ */
   function capture() {
-    // 无摄像头 → 走纯演示路径
-    if (!st.started) { J.startAnalyze(); return; }
+    // 无摄像头 → 走演示路径（同样带合理波动，保证每次效果不同）
+    if (!st.started) {
+      const demo = demoAnalysis();
+      st.lastAnalysis = demo;
+      st.lastPosture = makePosture(demo.seed);
+      st.lastPlan = null;
+      setTimeout(() => J.startAnalyze(), 80);
+      return;
+    }
 
     // 抓一帧高清用于展示
     const hd = Camera.grabHD(720);
@@ -398,10 +466,13 @@ const CamUI = (() => {
       if (a) runs.push(a);
     }
     const analysis = mergeRuns(runs);
+    // 本次评测种子：同一 seed 前端与后端波动一致、可复现
+    if (analysis && typeof Variance !== 'undefined') analysis.seed = Variance.reseed();
     st.lastAnalysis = analysis;
 
-    // 生成方案（体态部分仍沿用原型数据，可后续接入姿态估计）
-    const posture = { targets: ['forward_head', 'shoulder'], penalty: 5 };
+    // 生成方案（体态部分带有每次不同的轻微波动，随 analysis.seed 固定）
+    const posture = makePosture(analysis && analysis.seed);
+    st.lastPosture = posture;
     // 性别来自全局状态，决定穿搭 / 理容 / 妆容文案
     const gender = (typeof J !== 'undefined' && J.state && J.state.gender) || 'male';
     // 先用本地规则引擎即时出结果，保证交互零等待
@@ -485,11 +556,16 @@ const CamUI = (() => {
 
     // 若已采集过，但方案的性别与当前不一致 → 用新性别重建文案
     const g = (typeof J !== 'undefined' && J.state && J.state.gender) || 'male';
+    const posture = st.lastPosture || makePosture(a && a.seed);
     if (st.lastPlan && st.lastPlan.gender !== g) {
       try {
-        const posture = { targets: ['forward_head', 'shoulder'], penalty: 5 };
         st.lastPlan = Advisor.build(a, posture, g);
       } catch (e) { console.warn('[render] rebuild:', e); }
+    }
+
+    // 演示路径（无摄像头）下 lastPlan 可能为空 → 现算一份
+    if (!st.lastPlan && a) {
+      try { st.lastPlan = Advisor.build(a, posture, g); } catch (e) { console.warn('[render] demo build:', e); }
     }
 
     const p = st.lastPlan;

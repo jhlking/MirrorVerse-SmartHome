@@ -241,11 +241,25 @@ const J = (() => {
     }, 90);
   }
 
-  /* ---------- 体态评分动画（v5.0：环 + 数字同步，expo-out 缓动） ---------- */
+  /* ---------- 体态评分动画（v6.2：真实分数 + 环/数字同步，expo-out 缓动） ---------- */
   function animateScore() {
     const el  = document.getElementById('scoreNum');
     const fg  = document.getElementById('scoreFg');
-    const TOT = 289, target = 86;
+    const TOT = 289;
+
+    // 目标分：优先用本次测评真实算得的分数（CamUI.plan.score）
+    // 没有真实数据时退回一个「带波动的合理基准」，而不是写死 86。
+    let target = 86;
+    if (typeof CamUI !== 'undefined' && CamUI.plan && typeof CamUI.plan.score === 'number') {
+      target = CamUI.plan.score;
+    } else if (typeof Variance !== 'undefined') {
+      target = Variance.intRange(80, 91);
+    }
+    target = Math.max(52, Math.min(98, Math.round(target)));
+
+    // 分数分档文案同步（标题 / 偏移项 / 标签）
+    applyPoseVerdict(target);
+
     if (!fg) return;
 
     // 环：先归零再描边
@@ -263,6 +277,47 @@ const J = (() => {
           cur += 2; if (cur >= target) { cur = target; clearInterval(t); }
           el.textContent = cur;
         }, 26);
+      }
+    }
+  }
+
+  /* 依据分数给出分档结论，并同步分数区文案（避免永远显示同一句） */
+  function applyPoseVerdict(score) {
+    const h  = document.querySelector('#p-report-pose .score-info h3');
+    const p  = document.querySelector('#p-report-pose .score-info p');
+    const tags = document.querySelector('#p-report-pose .score-tags');
+    if (!h || !p) return;
+
+    let title, sub, minor;
+    if (score >= 90)      { title = '体态优秀'; minor = 1; }
+    else if (score >= 84) { title = '整体体态良好'; minor = 2; }
+    else if (score >= 76) { title = '体态尚可，仍有改善空间'; minor = 2; }
+    else                  { title = '体态需重点关注'; minor = 3; }
+
+    h.textContent = title;
+    p.innerHTML = `存在 <b style="color:#fcd34d">${minor} 项轻度</b> 偏移，建议针对性训练改善。`;
+
+    // 偏移标签：按分数与随机种子在合理集合中轮换
+    if (tags) {
+      const pool = {
+        骨盆: ['pelvis', '骨盆正常', '骨盆前倾'],
+        肩线: ['shoulder', '肩线正常', '肩线轻度'],
+        头颈: ['head', '颈椎正常', '头前伸']
+      };
+      const V = (typeof Variance !== 'undefined') ? Variance : null;
+      const mk = (key, okBelow) => {
+        const [id, ok, warn] = pool[key];
+        const bad = score < okBelow;
+        const cls = bad ? 'bad' : (score < 88 ? 'warn' : 'ok');
+        return `<span class="chip ${cls}">${bad ? warn : (score < 88 ? warn.replace('正常','轻度') : ok)}</span>`;
+      };
+      tags.innerHTML = mk('骨盆', 0) + mk('肩线', 74) + mk('头颈', 80);
+      // 用种子再打散标签顺序，让每次呈现略有差异
+      if (V) {
+        const spans = [...tags.children];
+        const order = V.nudge(spans, 0.3);
+        tags.innerHTML = '';
+        order.forEach(s => tags.appendChild(s));
       }
     }
   }

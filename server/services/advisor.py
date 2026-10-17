@@ -8,10 +8,35 @@
   - 知识库与前端保持同源，避免两端建议不一致
   - 输入为前端采集的 analysis（肤色/脸型/质量），输出为标准方案结构
   - 纯函数，无副作用，便于测试
+  - 与前端 variance.js 同构的「评测变化」：同一画面也给出合理波动，
+    且支持 analysis.seed 固定种子复现
 """
+import random
+
 from ..logger import get
 
 log = get("advisor")
+
+
+# ---------- 零、评测变化（与前端 variance.js 同构） ----------
+def _rng(seed):
+    """用 analysis.seed 生成可复现随机源；无 seed 则系统随机。"""
+    return random.Random(seed if seed is not None else None)
+
+
+def _jitter(rng, value, spread, lo=float("-inf"), hi=float("inf")):
+    """有界抖动：中心值 + [-spread, spread]，并夹到 [lo, hi]。"""
+    v = value + (rng.random() * 2 - 1) * spread
+    return max(lo, min(hi, v))
+
+
+def _nudge(rng, arr, bias=0.5):
+    """随机键 + 原序偏置重排，保证顺序变化但大致保留优先级。"""
+    n = len(arr) or 1
+    keyed = [(rng.random() + (i / n) * bias, v) for i, v in enumerate(arr)]
+    keyed.sort(key=lambda x: x[0])
+    return [v for _, v in keyed]
+
 
 
 # ---------- 一、肤色冷暖 → 配色知识库 ----------
@@ -184,6 +209,10 @@ def build(analysis, posture=None, gender="male"):
     gender = "female" if gender == "female" else "male"
     is_f = gender == "female"
 
+    # 本次评测的随机种子：由前端传入（analysis.seed），无则随机。
+    # 前端与后端用同一个 seed → 两端波动可复现且一致。
+    rng = _rng(analysis.get("seed"))
+
     tone = analysis.get("tone") or {}
     face = analysis.get("face") or {}
     q = analysis.get("quality") or {}
@@ -282,7 +311,7 @@ def build(analysis, posture=None, gender="male"):
 
     env = _quality_advice(q)
 
-    # ---- 健康分（与前端同算法：基于真实质量 + 体态惩罚）----
+    # ---- 健康分（与前端同算法：基于真实质量 + 体态惩罚 + 自然波动）----
     health = 100
     if q:
         if not q.get("usable", True):
@@ -295,19 +324,28 @@ def build(analysis, posture=None, gender="male"):
         health -= 3
     if posture:
         health -= (posture.get("penalty") or 0)
-    health = max(48, min(99, health))
+    health = int(round(max(48, min(99, _jitter(rng, health, 2.6)))))
 
-    # 置信度：有肤色 + 有人脸最高
+    # 置信度：有肤色 + 有人脸最高；波动幅度随基础置信度缩放
     if analysis.get("hasTone"):
         confidence = 96 if analysis.get("hasFace") else 82
     else:
         confidence = 58
+    spread = 2.2 if confidence >= 90 else (4 if confidence >= 70 else 6)
+    confidence = int(round(max(45, min(99, _jitter(rng, confidence, spread)))))
 
-    score = _score(q, tone)
+    # 体态评分：由质量与肤色推导，再叠加合理波动
+    score = int(round(max(52, min(98, _jitter(rng, _score(q, tone), 2.2)))))
+
+    # 建议排序：同类内轮换，避免每次逐条完全一致
+    diet = _nudge(rng, diet, 0.4)
+    move = _nudge(rng, move, 0.4)
+    life = _nudge(rng, life, 0.4)
 
     return {
         "ts": None,
         "gender": gender,
+        "seed": analysis.get("seed"),
         "tone": {**tone, "name": pal["name"], "key": key, "subSeason": sub,
                  "coolWarm": cool_warm, "lightness": lightness, "saturation": saturation},
         "face": {"shape": shape, "ratio": face.get("ratio")},

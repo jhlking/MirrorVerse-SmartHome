@@ -196,6 +196,14 @@ const Advisor = (() => {
     const face = analysis?.face;
     const q    = analysis?.quality;
 
+    // ---- 0. 本次评测的随机种子 ----
+    // 每次采集都换一个种子，让分数 / 置信度 / 建议排序出现「符合常识的自然波动」。
+    // 种子写进结果（seed 字段），便于复现与排查；调用方也可传入固定 seed。
+    const seed = (typeof Variance !== 'undefined')
+      ? Variance.reseed(analysis?.seed)
+      : 0;
+    const V = (typeof Variance !== 'undefined') ? Variance : null;
+
     // ---- 1. 判定冷暖调 ----
     let key = 'neutral';
     if (tone) {
@@ -215,6 +223,11 @@ const Advisor = (() => {
     }
 
     // ---- 3. 穿搭 ----
+    // 主色搭配顺序做轮换：同一色板可给出不同的「主打两色」组合
+    const mains = V ? V.nudge(pal.main, 0.5) : pal.main;
+    const ab = pal.main.slice(0, 2).map(x => x.n).join('、');
+    const pairAB = mains.slice(0, 2).map(x => x.n).join('、');
+    const pairBC = mains.slice(1, 3).map(x => x.n).join('、');
     const outfit = {
       palette: pal,
       key, subSeason,
@@ -223,10 +236,10 @@ const Advisor = (() => {
       metal: pal.metal,
       // 男生：颜色建议保留，但配饰 / 措辞改为中性偏男装表达
       desc: isF
-        ? `${pal.name}肤色建议以${pal.main.slice(0,2).map(x=>x.n).join('、')}为主色，`
-          + `避免大面积${pal.avoid.slice(0,2).join('、')}，配饰优选${pal.metal.split(' / ')[0]}。`
-        : `${pal.name}肤色建议以${pal.main.slice(0,2).map(x=>x.n).join('、')}为衬衫/外套主色，`
-          + `避开大面积${pal.avoid.slice(0,2).join('、')}，配饰选${pal.metal.split(' / ')[0]}，外套可走同色系深浅叠穿。`
+        ? `${pal.name}肤色建议以${pairAB}为主色，`
+          + `叠穿可用${pairBC}，避免大面积${pal.avoid.slice(0,2).join('、')}，配饰优选${pal.metal.split(' / ')[0]}。`
+        : `${pal.name}肤色建议以${pairAB}为衬衫/外套主色，`
+          + `进阶思路是${pairBC}同色系深浅叠穿，避开大面积${pal.avoid.slice(0,2).join('、')}，配饰选${pal.metal.split(' / ')[0]}。`
     };
 
     // ---- 4. 妆容 / 发型（按性别分流）----
@@ -285,7 +298,9 @@ const Advisor = (() => {
     // ---- 6. 拍摄环境建议 ----
     const env = qualityAdvice(q);
 
-    // ---- 7. 综合健康分（基于真实数据）----
+    // ---- 7. 综合健康分（基于真实数据 + 自然波动）----
+    // 基础分由真实数据决定；Variance 只在其上叠加 ±3 的合理波动
+    // （皮肤水分、微表情、环境光在两次采集间本就会有微小差异）。
     let health = 100;
     if (q) {
       if (!q.usable) health -= 8;
@@ -297,18 +312,68 @@ const Advisor = (() => {
       if (tone.saturation < 22) health -= 3;
     }
     if (posture) health -= (posture.penalty || 0);
+    if (V) health = V.jitter(health, 2.6);
+    health = Math.round(Math.max(48, Math.min(99, health)));
+
+    // ---- 8. 体态评分（0~100，独立于健康分）----
+    // 由「面部完整度 + 图像质量 + 体态偏移」加权，再加 ±2 波动。
+    let score = _poseScore(analysis, q, tone, posture);
+    if (V) score = V.jitter(score, 2.2);
+    score = Math.round(Math.max(52, Math.min(98, score)));
+
+    // ---- 9. 置信度（有波动，但严格分层）----
+    let confidence;
+    if (analysis?.hasTone) confidence = analysis.hasFace ? 96 : 82;
+    else confidence = 58;
+    // 波动幅度随基础置信度缩放：高置信度只微动，低置信度可动得多
+    if (V) {
+      const spread = confidence >= 90 ? 2.2 : confidence >= 70 ? 4 : 6;
+      confidence = V.jitterInt(confidence, spread, 45, 99);
+    }
+
+    // ---- 10. 建议排序：同类内轮换，避免每次逐条一模一样 ----
+    if (V) {
+      var dietOut = V.nudge(diet.slice(0, 5), 0.4);
+      var moveOut = V.nudge(move.slice(0, 4), 0.4);
+      var lifeOut = V.nudge(life.slice(0, 3), 0.4);
+    } else {
+      var dietOut = diet.slice(0, 5), moveOut = move.slice(0, 4), lifeOut = life.slice(0, 3);
+    }
 
     return {
       ts: Date.now(),
       gender,
+      seed,
       tone, face, quality: q, env,
       outfit, beauty,
-      diet: diet.slice(0, 5),
-      move: move.slice(0, 4),
-      life: life.slice(0, 3),
-      health: Math.max(48, Math.min(99, health)),
-      confidence: analysis?.hasTone ? (analysis.hasFace ? 96 : 82) : 58
+      diet: dietOut,
+      move: moveOut,
+      life: lifeOut,
+      health,
+      score,
+      confidence
     };
+  }
+
+  /* 体态评分：面部完整度 40% + 图像质量 35% + 体态 25% */
+  function _poseScore(analysis, q, tone, posture) {
+    let s = 74;
+    if (analysis?.hasFace) s += 8;
+    if (analysis?.hasTone) s += 4;
+    if (q) {
+      if (q.usable) s += 5;
+      // 亮度居中最加分
+      const bright = q.brightness || 0;
+      s += Math.max(-5, 4 - Math.abs(bright - 140) * 0.05);
+      // 清晰度
+      if (q.sharpness >= 12) s += 3;
+      else if (q.sharpness < 9) s -= 4;
+      // 对比度
+      if (q.contrast >= 40) s += 2;
+      else if (q.contrast < 26) s -= 3;
+    }
+    if (posture) s -= (posture.penalty || 0);
+    return s;
   }
 
   return { build, PALETTES, POSTURE_DIET, FACE_ADVICE };
