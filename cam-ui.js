@@ -21,7 +21,8 @@ const CamUI = (() => {
     lastPlan: null,
     boxSmooth: null,      // 人脸框平滑
     gesture: false,       // 是否已发生用户手势
-    pending: false        // 是否处于"待点击开启"状态
+    pending: false,       // 是否处于"待点击开启"状态
+    panelOpen: false      // 设备选择面板是否展开
   };
 
   /* 监听首次用户手势（浏览器要求摄像头授权需在交互后） */
@@ -82,7 +83,125 @@ const CamUI = (() => {
       const devs = await navigator.mediaDevices.enumerateDevices();
       st.cams = devs.filter(d => d.kind === 'videoinput');
     } catch (e) { st.cams = []; }
+    // 设备列表变了要同步刷新面板（若正打开着）
+    if (st.panelOpen) renderCamPanel();
+    return st.cams;
   }
+
+  /* ---------- 设备友好名：把系统标签整理成可读名称 ---------- */
+  // 系统标签形如 "USB2.0 HD UVC WebCam (0bda:5844)" / "Integrated Camera (13d3:56eb)"
+  function camName(dev, i) {
+    const raw = (dev && dev.label) || '';
+    // 去掉末尾的 (xxxx:xxxx) 厂商号
+    let n = raw.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)\s*$/i, '').trim();
+    if (!n) return `摄像头 ${i + 1}`;
+    return n;
+  }
+
+  /* ---------- 判定是否为「外接 / USB」摄像头 ----------
+     浏览器给的 label 五花八门，单靠 usb/uvc 会漏判（如 "Logitech BRIO 4K"）。
+     判定顺序很关键：
+       1) 先看「内置排除词」——"Integrated"/"Built-in"/"FaceTime" 是强信号，
+          优先级高于 webcam 这类通用词（否则 "Integrated Webcam" 会被误判）。
+       2) 再看外接关键词（usb/uvc/webcam/brio/c920/obsbot…）。
+       3) 都没有：形如 "Camera"/"Camera 2" 的占位名 → 内置；有具体型号名 → 外接。
+  */
+  const INT_RE   = /integrated|built[- ]?in|internal|front\s*camera|ir\s*camera|infrared|facetime|laptop|notebook|surface|realsense|depth|intel/i;
+  const EXT_RE   = /usb|uvc|webcam|brio|c\d{3,4}|obsbot|elgato|razer|kiyo|insta360|mevo|lifecam|logitech/i;
+  const INT_NAME = /^(camera|camera\s*\d*|usb\s*camera|webcam|camera\s+front|front)\s*$/i;
+  function isExternal(dev, i) {
+    const raw = ((dev && dev.label) || '').trim();
+    // 完全没有 label（未授权时浏览器会隐藏）→ 按内置处理，占位更稳妥
+    if (!raw) return false;
+    // 1) 内置强信号优先（Integrated Webcam 里含 webcam，必须先拦）
+    if (INT_RE.test(raw)) return false;
+    // 2) 外接关键词
+    if (EXT_RE.test(raw)) return true;
+    // 3) 名字形如 "Camera"/"Camera 2" 这种系统占位名 → 视为内置
+    if (INT_NAME.test(camName(dev, i))) return false;
+    // 其余有具体型号名但既非明显内置又非关键词命中 → 多为外接设备
+    return true;
+  }
+
+  /* ---------- 设备选择面板（USB / 内置摄像头直选） ---------- */
+  function renderCamPanel() {
+    const box = $('camPanelList');
+    if (!box) return;
+    if (!st.cams.length) {
+      box.innerHTML = '<div class="cp-empty">未检测到摄像头设备<br><span>请确认设备已连接并已授权</span></div>';
+      return;
+    }
+    box.innerHTML = st.cams.map((d, i) => {
+      const on = i === st.camIndex;
+      const isUsb = isExternal(d, i);
+      return `<button class="cp-item${on ? ' on' : ''}" onclick="CamUI.pickCamera(${i})">
+        <span class="cp-ic">${isUsb ? '🔌' : '📷'}</span>
+        <span class="cp-tx">
+          <b>${camName(d, i)}</b>
+          <i>${isUsb ? '外接 / USB' : '内置'}${on ? ' · 使用中' : ''}</i>
+        </span>
+        ${on ? '<span class="cp-dot"></span>' : ''}
+      </button>`;
+    }).join('') + `
+      <button class="cp-refresh" onclick="CamUI.refreshCams()">↻ 重新扫描设备</button>`;
+  }
+
+  function openCamPanel() {
+    const p = $('camPanel');
+    if (!p) return;
+    st.panelOpen = true;
+    p.classList.add('show');
+    renderCamPanel();
+    enumerate();
+  }
+
+  function closeCamPanel() {
+    const p = $('camPanel');
+    if (p) p.classList.remove('show');
+    st.panelOpen = false;
+  }
+
+  function toggleCamPanel() {
+    st.panelOpen ? closeCamPanel() : openCamPanel();
+  }
+
+  async function refreshCams() {
+    await enumerate();
+    renderCamPanel();
+    J.toast(`已扫描到 ${st.cams.length} 个摄像头`);
+  }
+
+  /* ---------- 选择指定设备并重连 ---------- */
+  async function pickCamera(i) {
+    if (i === st.camIndex && st.started) { closeCamPanel(); return; }
+    st.camIndex = i;
+    stopLoop();
+    await connect();
+    closeCamPanel();
+    if (st.started) J.toast('已切换至 ' + camName(st.cams[i], i));
+  }
+
+  /* ---------- 设备热插拔：插上 USB 自动刷新 ---------- */
+  (function watchDevices() {
+    if (!navigator.mediaDevices?.addEventListener) return;
+    navigator.mediaDevices.addEventListener('devicechange', async () => {
+      if (!st.gesture) return;
+      const before = st.cams.length;
+      await enumerate();
+      if (st.panelOpen) renderCamPanel();
+      if (st.cams.length !== before) {
+        J.toast(st.cams.length > before
+          ? `检测到新摄像头（共 ${st.cams.length} 个）`
+          : `摄像头已断开（剩余 ${st.cams.length} 个）`);
+        // 当前设备被拔掉 → 自动回落到第一个可用设备
+        if (st.cams.length && !st.cams[st.camIndex]) {
+          st.camIndex = 0;
+          stopLoop();
+          await connect();
+        }
+      }
+    });
+  })();
 
   async function connect(attempt = 0) {
     if (st.starting) return;
@@ -105,7 +224,7 @@ const CamUI = (() => {
       hideRetry();
 
       const s = Camera.getSettings();
-      const label = (dev?.label || '前置摄像头').replace(/\(.*?\)/, '').trim();
+      const label = camName(st.cams[st.camIndex], st.camIndex);
       setStatus('ok', `${label} · ${s?.width || '—'}×${s?.height || '—'}`);
 
       startLoop();
@@ -142,12 +261,14 @@ const CamUI = (() => {
     await connect();
   }
 
+  /* 快速切换：循环到下一个设备 */
   async function switchCamera() {
+    await enumerate();
     if (st.cams.length < 2) { J.toast('仅检测到 1 个摄像头'); return; }
     st.camIndex = (st.camIndex + 1) % st.cams.length;
     stopLoop();
     await connect();
-    J.toast('已切换至摄像头 ' + (st.camIndex + 1));
+    if (st.started) J.toast('已切换至 ' + camName(st.cams[st.camIndex], st.camIndex));
   }
 
   function shutdown() {
@@ -563,6 +684,10 @@ const CamUI = (() => {
      ============================================================ */
   return {
     boot, shutdown, retry, switchCamera, capture, renderReports, toggleLight, tabHabit, enable,
+    // 多摄像头 / USB 设备管理
+    listCams: () => st.cams.map((d, i) => ({ index: i, id: d.deviceId, label: camName(d, i), raw: d.label, external: isExternal(d, i) })),
+    openCamPanel, closeCamPanel, toggleCamPanel, refreshCams, pickCamera, enumerate, isExternal,
+    get current() { return st.cams[st.camIndex] ? camName(st.cams[st.camIndex], st.camIndex) : null; },
     get analysis() { return st.lastAnalysis; },
     get plan() { return st.lastPlan; },
     get running() { return st.started; },

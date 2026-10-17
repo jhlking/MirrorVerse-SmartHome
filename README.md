@@ -15,7 +15,7 @@
 [![SQLite](https://img.shields.io/badge/存储-SQLite-003b57?style=flat-square)](#后端服务)
 [![Zero Dependencies](https://img.shields.io/badge/依赖-零第三方依赖-3fb950?style=flat-square)](#技术栈)
 [![Vanilla JS](https://img.shields.io/badge/前端-原生%20HTML%20%2F%20CSS%20%2F%20JS-f7df1e?style=flat-square)](#技术栈)
-[![Version](https://img.shields.io/badge/版本-v6.0-ff8fb8?style=flat-square)](#版本记录)
+[![Version](https://img.shields.io/badge/版本-v6.1-ff8fb8?style=flat-square)](#版本记录)
 [![License](https://img.shields.io/badge/许可-MIT-7ee8dd?style=flat-square)](#许可)
 
 <br>
@@ -43,6 +43,7 @@
 它**不是 PPT 里的静态图**，而是一个能跑起来的**全栈应用**：
 
 - 🎥 **真的打开摄像头**，用 `getUserMedia` 实时采集
+- 🔌 **支持多摄像头 / USB 设备** —— 一键列出所有视频输入设备（内置 + 外接 USB），点名切换、热插拔自动刷新，外接设备拔掉自动回落
 - 🧮 **真的做像素级分析** —— YCbCr 肤色检测、人脸包围盒投影、拉普拉斯清晰度、冷暖色调判定，全部由数学计算得出，**同一用户在不同光照下结果不同**
 - 🐍 **真的有后端** —— Python 标准库实现的 REST API 服务，SQLite 持久化检测历史与用户档案
 - 🗣️ **真的会说话** —— Web Speech API 中文语音播报 + 实时打字机字幕
@@ -242,6 +243,25 @@ rbScore  = (平均R-B - 38) × 0.9        典型中性肤色 R-B ≈ 38
 
 ---
 
+## 🔌 多摄像头 / USB 设备切换
+
+落地镜常配外接 USB 摄像头（如罗技 BRIO、C920），而笔记本又自带内置摄像头 —— 镜界支持**任意视频输入设备的枚举、点选与热插拔切换**。
+
+- **设备面板** — 拍摄页点右侧 🔄 打开，列出全部 `videoinput` 设备；🔌 表示外接 / USB、📷 表示内置，当前设备带高亮圆点
+- **智能分类** — 浏览器给的 `label` 五花八门，这里用「内置排除词优先 + 外接关键词」双向判定：
+  - 先拦内置强信号（`Integrated` / `Built-in` / `FaceTime` / `IR Camera` / `RealSense`…）
+  - 再认外接关键词（`USB` / `UVC` / `Webcam` / `BRIO` / `C920` / `OBSBOT` / `LifeCam`…）
+  - 名称自动清洗尾部厂商号 `(0bda:5844)`，面板只显示可读型号名
+- **点名切换** — 点击任一设备即停流重连到目标 `deviceId`，并在状态条回显「设备名 · 分辨率」
+- **避开约束冲突** — `deviceId: {exact}` 与 `facingMode` 在浏览器里**互斥**（外接 USB 常被标成 `environment`，与 `facingMode:'user'` 打架报 `OverconstrainedError`）。`Camera.start()` 内部保证**二选一**，指定设备失败还会自动退回不指定设备重试
+- **热插拔监听** — 监听 `navigator.mediaDevices.devicechange`：插入 USB 弹提示并刷新列表；**当前设备被拔掉时自动回落到第一个可用设备**
+- **零配置** — 纯 `getUserMedia` + `enumerateDevices`，无需任何原生插件 / 驱动代码
+
+> 验收见 `_verify_camera.py`（13 项）与 `_verify_cam_render.py`（27 项），覆盖面板渲染、分类启发式、切换、约束冲突回归。
+> 说明：浏览器出于隐私，**授权摄像头前** `label` 为空字符串 —— 需先允许一次摄像头权限，设备名才会显示。
+
+---
+
 ## 🗣️ 语音助手
 
 基于浏览器原生 **Web Speech API**，零依赖中文播报（本机命中 `Microsoft Huihui` 音色）。
@@ -335,7 +355,7 @@ MirrorVerse-SmartHome/
 ├── app.js               页面路由 J.go()、步骤动画、镜面控制、性别主题 J.setGender()
 ├── camera.js            摄像头采集 + 像素级图像分析（零依赖）
 ├── advisor.js           前端建议规则引擎（离线兜底，与服务端口径一致）
-├── cam-ui.js            摄像头 UI 桥接：实时预览、人脸框、快门、报告渲染
+├── cam-ui.js            摄像头 UI 桥接：实时预览、人脸框、快门、报告渲染、多设备/USB 切换
 ├── voice.js             Web Speech API 中文语音播报
 ├── voice-ui.js          语音浮层：声波、打字机字幕、关键词高亮
 ├── fx.js                高级交互层：水波纹 / 光斑跟随 / 滚动渐显 / 数字滚动 / 视差
@@ -355,26 +375,31 @@ MirrorVerse-SmartHome/
 | **后端** | Python 3.8+ **标准库**：`http.server` · `sqlite3` · `json` · `argparse` · `threading` |
 | **存储** | SQLite（WAL 模式）+ 前端 `localStorage` 双通道 |
 | **图形** | Canvas 2D 像素分析、SVG 矢量图标、CSS 变量驱动的主题系统 |
-| **API** | `getUserMedia` · `Canvas.getImageData` · `SpeechSynthesis` · `fetch` · `localStorage` |
+| **API** | `getUserMedia` · `enumerateDevices` · `devicechange` · `Canvas.getImageData` · `SpeechSynthesis` · `fetch` · `localStorage` |
 | **测试** | Edge 无头模式 + Chrome DevTools Protocol（Python 标准库自建 WebSocket 客户端） |
 
 ---
 
 ## 🧪 工程验证
 
-原型与后端均用 **Edge 无头模式 + CDP** 做了数值化验收（不依赖人眼看图），三套测试脚本**全绿**：
+原型与后端均用 **Edge 无头模式 + CDP** 做了数值化验收（不依赖人眼看图），五套测试脚本**全绿**：
 
 | 测试套件 | 覆盖 | 结果 |
 |---|---|---|
 | **后端 API 端到端** | 9 个接口 + 参数校验 + 错误码 + CORS + 静态托管 + 目录穿越防护 | **68 / 68** ✅ |
 | **前端 × 后端集成** | 在线数据源、趋势/计数来自服务端、真实降级（死端口）、跨源 file:// | **20 / 20** ✅ |
 | **采集 → 服务端方案 → 入库** | 注入分析 → 服务端 plan → 报告渲染 → SQLite +1 | **10 / 10** ✅ |
+| **多摄像头 / USB 切换** | 设备枚举、面板渲染、点名切换、约束冲突回归、无 JS 异常 | **13 / 13** ✅ |
+| **摄像头面板渲染 + 分类启发式** | 网格布局、图标/文本不重叠、选中态、13 组真实设备名分类 | **27 / 27** ✅ |
 
 关键断言（全部为真实数值，非肉眼判断）：
 
-- 后端在线时，首页趋势图**点数 == `/api/trend` 返回点数**，检测次数**== 库内真实条数**
+- 后端在线时，首页趋势图**点数 == `/api/trend` 返回点数**（含性别样本不足时的回落规则），检测次数**== 库内真实条数**
 - 走完采集流程后，**库内记录 +1**，报告页穿搭/妆容文案由**服务端 plan** 驱动（非占位文案）
 - 后端不可达时，胶囊切「本地模式」、趋势图回落内置 6 点、**JS 报错 0**
+- 摄像头面板列出全部设备、当前设备唯一高亮、每项图标在文本左侧不重叠（`icLeft=14 < txLeft=47`）
+- 设备分类启发式对 13 组真实设备名（含 `Integrated Webcam`、`Logitech BRIO 4K`、`C920`、`OBSBOT`、`RealSense`）**全部判定正确**
+- 指定 `deviceId` 启动**不报 `OverconstrainedError`**（`deviceId`/`facingMode` 互斥已规避）
 - 目录穿越（`/../server.py`、`/%2e%2e/`、`/..%2f`）全部 **403 拦截**
 - 方法不匹配 **405**、资源不存在 **404**、非法参数 **400 / 422**、非法 `gender` **400**
 
@@ -404,6 +429,7 @@ MirrorVerse-SmartHome/
 - 健康建议为通用科普性内容，**不构成医疗建议**
 - 性别主题只改变配色与建议措辞，不改变分析算法
 - 后端为**单机演示级**：无鉴权、CORS 放开、SQLite 单文件，不适合直接公网部署
+- 设备分类为**启发式规则**（基于 `label` 关键词），浏览器未授权前 `label` 为空，届时无法区分内外置
 
 ---
 
@@ -411,6 +437,7 @@ MirrorVerse-SmartHome/
 
 | 版本 | 内容 |
 |---|---|
+| **v6.1** | 多摄像头 / USB 切换：设备枚举与面板、智能内外置分类、点名切换、热插拔监听与拔线回落、`deviceId`/`facingMode` 约束冲突规避 |
 | **v6.0** | 全栈化：Python 标准库后端（REST API + SQLite）、前后端契约对齐、优雅降级 + 数据源可视化 |
 | **v5.0** | 高级质感层：统一动效基调、自绘 SVG 数据可视化、交互反馈与微动效、玻璃/噪点质感精修 |
 | **v4.0** | 男生 / 女生双主题（粉色女生模式）、建议文案性别分流、`G` 快捷键 |

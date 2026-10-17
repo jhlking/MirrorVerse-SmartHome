@@ -33,17 +33,37 @@ const Camera = (() => {
     }
     stop(); // 清理旧流
 
-    const constraints = {
-      video: {
-        width:  { ideal: opts.width  || 1280 },
-        height: { ideal: opts.height || 960 },
-        facingMode: opts.facingMode || 'user',
-        frameRate: { ideal: 30 }
-      },
-      audio: false
+    // 设备选择优先级：显式 deviceId > facingMode
+    // ⚠️ 两者同时给会被浏览器判为互斥约束（OverconstrainedError），
+    //    尤其外接 USB 摄像头常被标成 environment，与 facingMode:'user' 打架。
+    const video = {
+      width:  { ideal: opts.width  || 1280 },
+      height: { ideal: opts.height || 960 },
+      frameRate: { ideal: 30 }
     };
+    if (opts.deviceId) {
+      video.deviceId = { exact: opts.deviceId };
+    } else if (opts.facingMode || 'user') {
+      video.facingMode = opts.facingMode || 'user';
+    }
 
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const constraints = { video, audio: false };
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err) {
+      // deviceId 指定失败（设备被拔 / 被占用）→ 退回到不指定设备重试一次，
+      // 避免整条链路因一个失效 id 直接挂掉。
+      if (opts.deviceId && (err.name === 'OverconstrainedError' || err.name === 'NotFoundError')) {
+        delete video.deviceId;
+        video.facingMode = 'user';
+        stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+      } else {
+        throw err;
+      }
+    }
+
     st.stream = stream;
     st.video = videoEl;
     videoEl.srcObject = stream;

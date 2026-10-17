@@ -22,6 +22,7 @@ desktop.ini
 # 浏览器无头测试的临时 profile（Edge CDP）
 .edge-tmp/
 .edge-cdp-tmp/
+.edge-cdp-tmp-cam/
 
 # 调试脚本（本地验证用，不入库）
 # 注意：必须用「/」锚定到仓库根目录，否则会误伤包内的 __init__.py
@@ -32,3 +33,5 @@ desktop.ini
 # 原始高清截图备份（仓库内使用压缩后的 webp）
 shots_raw/
 *.orig
+# CDP 原始 PNG 截图（仅提交压缩后的 webp）
+shots/*.png

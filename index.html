@@ -299,8 +299,17 @@
               <div class="shutter-row">
                 <div class="shutter-side" title="切换补光" onclick="CamUI.toggleLight()">💡</div>
                 <div class="shutter" onclick="CamUI.capture()" title="拍照分析"></div>
-                <div class="shutter-side" title="切换摄像头" onclick="CamUI.switchCamera()">🔄</div>
+                <div class="shutter-side" title="选择摄像头 / USB 设备" onclick="CamUI.toggleCamPanel()">🔄</div>
               </div>
+            </div>
+
+            <!-- 摄像头 / USB 设备选择面板 -->
+            <div class="cam-panel" id="camPanel">
+              <div class="cp-head">
+                <span>选择摄像头</span>
+                <button class="cp-close" onclick="CamUI.closeCamPanel()" aria-label="关闭">✕</button>
+              </div>
+              <div class="cp-list" id="camPanelList"></div>
             </div>
           </div>
         </section>
